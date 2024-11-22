@@ -96,7 +96,9 @@ button.song-button:hover {
   margin: 0; /* Remove any additional margins around the panel */
   background-color: transparent;
   display: block;
+
 }
+
 
 @font-face {
     font-family: 'Helvetica Neue LT Pro', sans-serif;

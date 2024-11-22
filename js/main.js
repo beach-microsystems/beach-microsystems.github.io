@@ -2,12 +2,11 @@ var acc = document.getElementsByClassName("accordion");
 var i;
 
 for (i = 0; i < acc.length; i++) {
-  acc[i].addEventListener("click", function() {
-    //  Toggle between adding and removing the "active" class,
-    // to highlight the button that controls the panel
-    this.classList.toggle("active");
+  acc[i].addEventListener("click", function () {
+    // Skip "Internal" and "External" buttons
+    if (this.classList.contains("internal-external")) return;
 
-    // Toggle between hiding and showing the active panel
+    this.classList.toggle("active");
     var panel = this.nextElementSibling;
     if (panel.style.display === "block") {
       panel.style.display = "none";
@@ -151,4 +150,36 @@ dustOverlay.addEventListener('pointermove', (event) => {
       clearDust({ target: element });
     }
   });
+});
+
+// Scoped logic for "Internal" and "External"
+const internalButton = document.querySelector('.internal-external:nth-of-type(1)');
+const externalButton = document.querySelector('.internal-external:nth-of-type(2)');
+const internalPanel = internalButton.nextElementSibling;
+const externalPanel = externalButton.nextElementSibling;
+
+function toggleInternalExternal(clickedButton, clickedPanel, otherButton, otherPanel) {
+  const isActive = clickedPanel.style.display === "block";
+
+  // Collapse the other panel
+  otherPanel.style.display = "none";
+  otherButton.classList.remove("active");
+
+  // Toggle the clicked panel
+  if (isActive) {
+    clickedPanel.style.display = "none"; // Collapse if already open
+    clickedButton.classList.remove("active");
+  } else {
+    clickedPanel.style.display = "block"; // Expand if closed
+    clickedButton.classList.add("active");
+  }
+}
+
+// Add event listeners for "Internal" and "External"
+internalButton.addEventListener("click", () => {
+  toggleInternalExternal(internalButton, internalPanel, externalButton, externalPanel);
+});
+
+externalButton.addEventListener("click", () => {
+  toggleInternalExternal(externalButton, externalPanel, internalButton, internalPanel);
 });
