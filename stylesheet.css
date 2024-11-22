@@ -115,7 +115,6 @@ body {
   padding: 0 1rem;
   margin: 0; /* Remove any additional margins around the panel */
   line-height: 0.9;
-
 }
 
 @media (max-width: 768px) {
@@ -141,8 +140,8 @@ body {
   left: 0; /* Will be randomized by JavaScript */
   width: 1.875rem; /* Set a default size */
   pointer-events: none; /* Prevent interaction */
+  mix-blend-mode: luminosity; /* Create an overlay-like effect */
 }
-
 @keyframes fall {
   0% {
     transform: translateY(-100vh) rotate(0deg);

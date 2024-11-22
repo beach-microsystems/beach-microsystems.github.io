@@ -82,22 +82,23 @@ function createFallingObject() {
 
   // Set initial position and size
   object.style.left = `${Math.random() * 100}vw`; // Random horizontal position
-  object.style.width = `${20 + Math.random() * 100}px`; // Random size (20px to 50px)
+  object.style.width = `${75 + Math.random() * 150}px`; // Random size (20px to 50px)
   container.appendChild(object);
 
   // Physics-based fall and rotation setup
   const startTime = performance.now();
   const gravity = 400; // Pixels per second²
-  const initialRotation = Math.random() * 360; // Random starting rotation (0-360 degrees)
-  const rotationSpeed = Math.random() * 50 - 25; // Random speed (-100 to 100 degrees/sec)
+  // const initialRotation = Math.random() * 360; // Random starting rotation (0-360 degrees)
+  // const rotationSpeed = Math.random() * 50 - 25; // Random speed (-100 to 100 degrees/sec)
 
   function animateFall(time) {
     const elapsed = (time - startTime) / 1000; // Convert to seconds
     const distance = 0.5 * gravity * Math.pow(elapsed, 2); // Distance fallen
-    const rotation = initialRotation + elapsed * rotationSpeed;
+    // const rotation = initialRotation + elapsed * rotationSpeed;
 
     // Apply translation (fall) and rotation
-    object.style.transform = `translateY(${distance}px) rotate(${rotation}deg)`;
+    //object.style.transform = `translateY(${distance}px) rotate(${rotation}deg)`;
+    object.style.transform = `translateY(${distance}px)`;
 
     // Stop when the object is out of the viewport
     if (distance < window.innerHeight + 100) {
