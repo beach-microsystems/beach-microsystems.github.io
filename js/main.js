@@ -83,7 +83,7 @@ function createDustPile() {
     dustImage.classList.add('dust-image');
 
     // Randomly size and position the images
-    const size = Math.random() * 50 + 30; // Random size between 30px and 80px
+    const size = Math.random() * 100 + 30; // Random size between 30px and 80px
     const offsetX = Math.random() * 130; // Spread horizontally within 200px
     const offsetY = Math.random() * 100; // Spread vertically within 200px
 
