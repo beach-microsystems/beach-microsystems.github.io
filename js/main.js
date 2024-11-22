@@ -78,62 +78,67 @@ const container = document.querySelector('.falling-container');
 let tiltX = 0; // Left-right tilt (gamma)
 let tiltY = 0; // Forward-backward tilt (beta)
 
-// Add event listener for device orientation
-window.addEventListener("deviceorientation", (event) => {
-  if (event.gamma !== null && event.beta !== null) {
-    tiltX = event.gamma; // Update left-right tilt
-    tiltY = event.beta;  // Update forward-backward tilt
-  } else {
-    console.log("Device orientation values are not available.");
-  }
-});
+// Listen for device orientation changes
+if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', (event) => {
+    if (event.gamma !== null && event.beta !== null) {
+      tiltX = event.gamma; // Update left-right tilt
+      tiltY = event.beta;  // Update forward-backward tilt
+    } else {
+      console.log("Device orientation values are not available.");
+    }
+  });
+} else {
+  console.log("DeviceOrientation is NOT supported on this device.");
+}
 
 function createFallingObject() {
   const object = document.createElement('img');
-  object.src = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with your SVG file path
+  object.src = 'path/to/your-image.svg'; // Replace with your SVG file path
   object.classList.add('falling-object');
 
   // Set initial position and size
   object.style.left = `${Math.random() * 100}vw`; // Random horizontal position
-  object.style.width = `${30 + Math.random() * 100}px`; // Random size (20px to 50px)
+  object.style.width = `${20 + Math.random() * 30}px`; // Random size (20px to 50px)
   container.appendChild(object);
 
   // Physics-based fall and rotation setup
   const startTime = performance.now();
-  const gravity = 400; // Pixels per second²
+  const gravity = 500; // Pixels per second²
   const initialRotation = Math.random() * 360; // Random starting rotation (0-360 degrees)
-  const rotationSpeed = Math.random() * 50 - 25; // Random speed (-100 to 100 degrees/sec)
+  const rotationSpeed = Math.random() * 50 - 25; // Random speed (-25 to 25 degrees/sec)
 
   function animateFall(time) {
-  const elapsed = (time - startTime) / 1000; // Convert to seconds
+    const elapsed = (time - startTime) / 1000; // Convert to seconds
 
-  // Adjust distance fallen based on gravity and tilt
-  const distanceY = 0.5 * gravity * Math.pow(elapsed, 2) + tiltY * 5; // Gravity + forward-backward tilt
-  const distanceX = tiltX * 5; // Left-right tilt influences horizontal drift
+    // Adjust distance fallen based on gravity and tilt
+    const baseDistanceY = 0.5 * gravity * Math.pow(elapsed, 2); // Base vertical distance
+    const distanceY = baseDistanceY + tiltY * 5; // Adjusted vertical fall with forward-backward tilt
+    const distanceX = (tiltX / 90) * window.innerWidth; // Adjust horizontal position relative to tilt
 
-  const rotation = initialRotation + elapsed * rotationSpeed; // Smooth, continuous rotation
+    const rotation = initialRotation + elapsed * rotationSpeed; // Smooth, continuous rotation
 
-  // Apply translation (fall with tilt) and rotation
-  object.style.transform = `translate(${distanceX}px, ${distanceY}px) rotate(${rotation}deg)`;
+    // Apply translation (fall with tilt) and rotation
+    object.style.transform = `translate(${distanceX}px, ${distanceY}px) rotate(${rotation}deg)`;
 
-  // Stop when the object is out of the viewport
-  if (distanceY < window.innerHeight + 100) {
-    requestAnimationFrame(animateFall);
-  } else {
-    object.remove(); // Clean up once it leaves the screen
+    // Stop when the object is out of the viewport
+    if (distanceY < window.innerHeight + 100) {
+      requestAnimationFrame(animateFall);
+    } else {
+      object.remove(); // Clean up once it leaves the screen
+    }
   }
-}
 
   requestAnimationFrame(animateFall);
 }
 
 // Start generating falling objects
- const intervalId = setInterval(createFallingObject, 10); // Create an object every 500ms
+const intervalId = setInterval(createFallingObject, 500); // Create an object every 500ms
 
-// Stop the falling effect after 5 seconds
- setTimeout(() => {
-   clearInterval(intervalId); // Stops the interval
- }, 1500); // 1500ms = 1.5 seconds
+// Stop the falling effect after 10 seconds (optional)
+setTimeout(() => {
+  clearInterval(intervalId); // Stops the interval
+}, 10000); // 10000ms = 10 seconds
 
 //setInterval(createFallingObject, 20); // Create a new object every 500ms
 
