@@ -87,7 +87,7 @@ function createFallingObject() {
 
   // Physics-based fall and rotation setup
   const startTime = performance.now();
-  const gravity = 500; // Pixels per second²
+  const gravity = 400; // Pixels per second²
   const initialRotation = Math.random() * 360; // Random starting rotation (0-360 degrees)
   const rotationSpeed = Math.random() * 50 - 25; // Random speed (-100 to 100 degrees/sec)
 
@@ -111,12 +111,13 @@ function createFallingObject() {
 }
 
 // Start generating falling objects
-const intervalId = setInterval(createFallingObject, 10); // Create an object every 500ms
+// const intervalId = setInterval(createFallingObject, 10); // Create an object every 500ms
 
 // Stop the falling effect after 5 seconds
-setTimeout(() => {
-  clearInterval(intervalId); // Stops the interval
-}, 1500); // 1500ms = 1.5 seconds
+// setTimeout(() => {
+//   clearInterval(intervalId); // Stops the interval
+// }, 1500); // 1500ms = 1.5 seconds
 
 
-// for constant: setInterval(createFallingObject, 500); // Create a new object every 500ms
+
+setInterval(createFallingObject, 20); // Create a new object every 500ms
