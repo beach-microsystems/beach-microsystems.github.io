@@ -10,6 +10,18 @@ html, body {
   touch-action: none; /* Disable touch gestures */
 }
 
+h2 {
+  color: inherit;
+  font-size: 1.875rem;
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 250;
+  padding: 0 1rem;
+  margin: 0; /* Remove any additional margins around the panel */
+  background-color: transparent;
+  display: block;
+}
+
 /* Fullscreen container for the overlay */
 #dust-overlay {
   position: absolute;
