@@ -47,7 +47,7 @@ button.song-button {
   display: block; /* Ensure buttons take up their own line */
   width: 100%;
   font-family: "helveticaa-ul", sans-serif; /* Matches your site's font */
-  font-size: 0.9rem; /* Matches the rest of the text size */
+  font-size: inherit; /* Inherit font size from parent container */
   font-weight: 250; /* Matches light-weight text */
   color: inherit; /* Inherits the text color from surrounding styles */
   cursor: pointer; /* Makes it clear the button is clickable */
@@ -110,9 +110,9 @@ button.song-button:hover {
 }
 
 body {
+  font-size: 1rem;
+  font-family: "helveticaa-ul", sans-serif;
   color: #FFFFFF;
-  font-size: 0.9rem;
-  font-family: inherit;
   font-style: normal;
   font-weight: 250;
   background-color: transparent;
