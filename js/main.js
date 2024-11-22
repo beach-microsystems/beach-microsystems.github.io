@@ -72,62 +72,52 @@ function songname(name) {
   singerElement.innerHTML = `@⌗╳ now playing... ${name}`;
 }
 
-//snow effect attempt
-const container = document.querySelector('.falling-container');
-const totalObjects = 30; // Total number of images to drop
-const objects = []; // Array to store all created objects
-let tiltX = 0; // Left-right tilt (gamma)
-let tiltY = 0; // Forward-backward tilt (beta)
+const dustOverlay = document.getElementById('dust-overlay');
+const totalDustImages = 50; // Number of dust images
+const dustImageSrc = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with the path to your image
 
-// Create and drop all objects
-function initializeObjects() {
-  for (let i = 0; i < totalObjects; i++) {
-    const object = document.createElement('img');
-    object.src = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with your SVG file path
-    object.classList.add('falling-object');
+function createDustPile() {
+  for (let i = 0; i < totalDustImages; i++) {
+    const dustImage = document.createElement('img');
+    dustImage.src = dustImageSrc;
+    dustImage.classList.add('dust-image');
 
-    // Set random initial position and size
-    object.style.position = 'absolute';
-    object.style.left = `${Math.random() * 100}vw`; // Random horizontal position
-    object.style.top = `${Math.random() * 100}vh`; // Random vertical position
-    object.style.width = `${30 + Math.random() * 100}px`; // Random size
-    container.appendChild(object);
+    // Randomly size and position the images
+    const size = Math.random() * 50 + 30; // Random size between 30px and 80px
+    const offsetX = Math.random() * 130; // Spread horizontally within 200px
+    const offsetY = Math.random() * 100; // Spread vertically within 200px
 
-    objects.push(object); // Store the object for later movement
+    dustImage.style.width = `${size}px`;
+    dustImage.style.height = `${size}px`;
+    dustImage.style.left = `${offsetX}px`;
+    dustImage.style.top = `${offsetY}px`;
+
+    // Add interaction to clear the dust on pointer events
+    dustImage.addEventListener('pointerdown', clearDust);
+    dustOverlay.appendChild(dustImage);
   }
 }
 
-// Gyroscope-based movement
-function moveObjects() {
-  objects.forEach((object) => {
-    // Get current position
-    const currentX = parseFloat(object.style.left) || 0;
-    const currentY = parseFloat(object.style.top) || 0;
+function clearDust(event) {
+  const dustImage = event.target;
 
-    // Update position based on tilt
-    const newX = currentX + tiltX * 0.5; // Adjust horizontal movement sensitivity
-    const newY = currentY + tiltY * 0.5; // Adjust vertical movement sensitivity
+  // Fade out and move the image slightly
+  dustImage.style.opacity = 0;
+  dustImage.style.transform = 'translateY(-50px) rotate(20deg)';
 
-    // Keep objects within bounds
-    object.style.left = `${Math.max(0, Math.min(newX, window.innerWidth))}px`;
-    object.style.top = `${Math.max(0, Math.min(newY, window.innerHeight))}px`;
-  });
-
-  requestAnimationFrame(moveObjects); // Continuously update positions
+  // Remove the image from the DOM after animation
+  setTimeout(() => dustImage.remove(), 300);
 }
 
-// Listen for device orientation changes
-if (window.DeviceOrientationEvent) {
-  window.addEventListener('deviceorientation', (event) => {
-    if (event.gamma !== null && event.beta !== null) {
-      tiltX = event.gamma; // Left-right tilt (gamma)
-      tiltY = event.beta;  // Forward-backward tilt (beta)
+// Initialize the dust pile
+createDustPile();
+
+dustOverlay.addEventListener('pointermove', (event) => {
+  const elements = document.elementsFromPoint(event.clientX, event.clientY);
+
+  elements.forEach((element) => {
+    if (element.classList.contains('dust-image')) {
+      clearDust({ target: element });
     }
   });
-} else {
-  console.log('DeviceOrientation is NOT supported on this device.');
-}
-
-// Initialize the objects and start the movement loop
-initializeObjects();
-moveObjects();
+});
