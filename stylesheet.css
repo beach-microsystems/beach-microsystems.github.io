@@ -12,14 +12,13 @@ html, body {
 
 h2 {
   color: inherit;
-  font-size: 1.875rem;
-  font-family: inherit;
+  font-size: 1.25rem;
+  font-family: helveticaa-ul;
   font-style: normal;
-  font-weight: 250;
+  font-weight: ultralight;
   padding: 0 1rem;
   margin: 0; /* Remove any additional margins around the panel */
   background-color: transparent;
-  display: block;
 }
 
 /* Fullscreen container for the overlay */
