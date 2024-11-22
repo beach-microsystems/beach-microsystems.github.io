@@ -72,9 +72,23 @@ function songname(name) {
   singerElement.innerHTML = `@⌗╳ now playing... ${name}`;
 }
 
+
+
+// Dust Pile
 const dustOverlay = document.getElementById('dust-overlay');
 const totalDustImages = 50; // Number of dust images
 const dustImageSrc = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with the path to your image
+
+// Disable scrolling when the overlay is active
+function preventScrolling(enable) {
+  if (enable) {
+    document.documentElement.classList.add('no-scroll');
+    document.body.classList.add('no-scroll');
+  } else {
+    document.documentElement.classList.remove('no-scroll');
+    document.body.classList.remove('no-scroll');
+  }
+}
 
 function createDustPile() {
   for (let i = 0; i < totalDustImages; i++) {
@@ -106,11 +120,28 @@ function clearDust(event) {
   dustImage.style.transform = 'translateY(-50px) rotate(20deg)';
 
   // Remove the image from the DOM after animation
-  setTimeout(() => dustImage.remove(), 300);
-}
+   setTimeout(() => {
+     dustImage.remove();
+
+     // Re-enable scrolling if all dust is cleared
+     if (dustOverlay.children.length === 0) {
+       preventScrolling(false);
+     }
+   }, 300);
+ }
+
+// Prevent scrolling when interacting with dust on mobile
+dustOverlay.addEventListener('touchstart', (event) => {
+  event.preventDefault();
+}, { passive: false });
+
+dustOverlay.addEventListener('touchmove', (event) => {
+  event.preventDefault();
+}, { passive: false });
 
 // Initialize the dust pile
 createDustPile();
+preventScrolling(true);
 
 dustOverlay.addEventListener('pointermove', (event) => {
   const elements = document.elementsFromPoint(event.clientX, event.clientY);
