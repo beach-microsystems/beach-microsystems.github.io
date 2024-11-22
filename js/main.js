@@ -75,6 +75,15 @@ function songname(name) {
 //snow effect attempt
 const container = document.querySelector('.falling-container');
 
+let tiltX = 0; // Left-right tilt (gamma)
+let tiltY = 0; // Forward-backward tilt (beta)
+
+// Listen for device orientation changes
+window.addEventListener('deviceorientation', (event) => {
+  tiltX = event.gamma; // Left-right tilt (ranges from -90 to 90)
+  tiltY = event.beta;  // Forward-backward tilt (ranges from -180 to 180)
+});
+
 function createFallingObject() {
   const object = document.createElement('img');
   object.src = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with your SVG file path
@@ -92,21 +101,24 @@ function createFallingObject() {
   const rotationSpeed = Math.random() * 50 - 25; // Random speed (-100 to 100 degrees/sec)
 
   function animateFall(time) {
-    const elapsed = (time - startTime) / 1000; // Convert to seconds
-    const distance = 0.5 * gravity * Math.pow(elapsed, 2); // Distance fallen
-    const rotation = initialRotation + elapsed * rotationSpeed;
+  const elapsed = (time - startTime) / 1000; // Convert to seconds
 
-    // Apply translation (fall) and rotation
-    object.style.transform = `translateY(${distance}px) rotate(${rotation}deg)`;
-    // object.style.transform = `translateY(${distance}px)`;
+  // Adjust distance fallen based on gravity and tilt
+  const distanceY = 0.5 * gravity * Math.pow(elapsed, 2) + tiltY * 5; // Gravity + forward-backward tilt
+  const distanceX = tiltX * 5; // Left-right tilt influences horizontal drift
 
-    // Stop when the object is out of the viewport
-    if (distance < window.innerHeight + 100) {
-      requestAnimationFrame(animateFall);
-    } else {
-      object.remove(); // Clean up once it leaves the screen
-    }
+  const rotation = initialRotation + elapsed * rotationSpeed; // Smooth, continuous rotation
+
+  // Apply translation (fall with tilt) and rotation
+  object.style.transform = `translate(${distanceX}px, ${distanceY}px) rotate(${rotation}deg)`;
+
+  // Stop when the object is out of the viewport
+  if (distanceY < window.innerHeight + 100) {
+    requestAnimationFrame(animateFall);
+  } else {
+    object.remove(); // Clean up once it leaves the screen
   }
+}
 
   requestAnimationFrame(animateFall);
 }
@@ -120,3 +132,7 @@ function createFallingObject() {
  }, 1500); // 1500ms = 1.5 seconds
 
 //setInterval(createFallingObject, 20); // Create a new object every 500ms
+
+if (!window.DeviceOrientationEvent) {
+  console.log('DeviceOrientation not supported. Default falling behavior applied.');
+}
