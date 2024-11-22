@@ -74,74 +74,60 @@ function songname(name) {
 
 //snow effect attempt
 const container = document.querySelector('.falling-container');
-
+const totalObjects = 30; // Total number of images to drop
+const objects = []; // Array to store all created objects
 let tiltX = 0; // Left-right tilt (gamma)
 let tiltY = 0; // Forward-backward tilt (beta)
+
+// Create and drop all objects
+function initializeObjects() {
+  for (let i = 0; i < totalObjects; i++) {
+    const object = document.createElement('img');
+    object.src = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with your SVG file path
+    object.classList.add('falling-object');
+
+    // Set random initial position and size
+    object.style.position = 'absolute';
+    object.style.left = `${Math.random() * 100}vw`; // Random horizontal position
+    object.style.top = `${Math.random() * 100}vh`; // Random vertical position
+    object.style.width = `${30 + Math.random() * 100}px`; // Random size
+    container.appendChild(object);
+
+    objects.push(object); // Store the object for later movement
+  }
+}
+
+// Gyroscope-based movement
+function moveObjects() {
+  objects.forEach((object) => {
+    // Get current position
+    const currentX = parseFloat(object.style.left) || 0;
+    const currentY = parseFloat(object.style.top) || 0;
+
+    // Update position based on tilt
+    const newX = currentX + tiltX * 0.5; // Adjust horizontal movement sensitivity
+    const newY = currentY + tiltY * 0.5; // Adjust vertical movement sensitivity
+
+    // Keep objects within bounds
+    object.style.left = `${Math.max(0, Math.min(newX, window.innerWidth))}px`;
+    object.style.top = `${Math.max(0, Math.min(newY, window.innerHeight))}px`;
+  });
+
+  requestAnimationFrame(moveObjects); // Continuously update positions
+}
 
 // Listen for device orientation changes
 if (window.DeviceOrientationEvent) {
   window.addEventListener('deviceorientation', (event) => {
     if (event.gamma !== null && event.beta !== null) {
-      tiltX = event.gamma; // Update left-right tilt
-      tiltY = event.beta;  // Update forward-backward tilt
-    } else {
-      console.log("Device orientation values are not available.");
+      tiltX = event.gamma; // Left-right tilt (gamma)
+      tiltY = event.beta;  // Forward-backward tilt (beta)
     }
   });
 } else {
-  console.log("DeviceOrientation is NOT supported on this device.");
+  console.log('DeviceOrientation is NOT supported on this device.');
 }
 
-function createFallingObject() {
-  const object = document.createElement('img');
-  object.src = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with your SVG file path
-  object.classList.add('falling-object');
-
-  // Set initial position and size
-  object.style.left = `${Math.random() * 100}vw`; // Random horizontal position
-  object.style.width = `${20 + Math.random() * 30}px`; // Random size (20px to 50px)
-  container.appendChild(object);
-
-  // Physics-based fall and rotation setup
-  const startTime = performance.now();
-  const gravity = 500; // Pixels per second²
-  const initialRotation = Math.random() * 360; // Random starting rotation (0-360 degrees)
-  const rotationSpeed = Math.random() * 50 - 25; // Random speed (-25 to 25 degrees/sec)
-
-  function animateFall(time) {
-    const elapsed = (time - startTime) / 1000; // Convert to seconds
-
-    // Adjust distance fallen based on gravity and tilt
-    const baseDistanceY = 0.5 * gravity * Math.pow(elapsed, 2); // Base vertical distance
-    const distanceY = baseDistanceY + tiltY * 5; // Adjusted vertical fall with forward-backward tilt
-    const distanceX = (tiltX / 90) * window.innerWidth; // Adjust horizontal position relative to tilt
-
-    const rotation = initialRotation + elapsed * rotationSpeed; // Smooth, continuous rotation
-
-    // Apply translation (fall with tilt) and rotation
-    object.style.transform = `translate(${distanceX}px, ${distanceY}px) rotate(${rotation}deg)`;
-
-    // Stop when the object is out of the viewport
-    if (distanceY < window.innerHeight + 100) {
-      requestAnimationFrame(animateFall);
-    } else {
-      object.remove(); // Clean up once it leaves the screen
-    }
-  }
-
-  requestAnimationFrame(animateFall);
-}
-
-// Start generating falling objects
-const intervalId = setInterval(createFallingObject, 500); // Create an object every 500ms
-
-// Stop the falling effect after 10 seconds (optional)
-setTimeout(() => {
-  clearInterval(intervalId); // Stops the interval
-}, 10000); // 10000ms = 10 seconds
-
-//setInterval(createFallingObject, 20); // Create a new object every 500ms
-
-if (!window.DeviceOrientationEvent) {
-  console.log('DeviceOrientation not supported. Default falling behavior applied.');
-}
+// Initialize the objects and start the movement loop
+initializeObjects();
+moveObjects();
