@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 269 118">
+  <defs>
+    <style>
+      .cls-1 {
+        filter: url(#AI_BevelShadow_1);
+      }
+
+      .cls-2 {
+        fill: #fff;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+    </style>
+    <filter id="AI_BevelShadow_1" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="4"/>
+      <feOffset dx="4" dy="4" in="blur" result="offsetBlur"/>
+      <feSpecularLighting in="blur" result="specOut" specularConstant="1" specularExponent="10" surfaceScale="5">
+        <fePointLight x="-5000" y="-10000" z="-20000"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut"/>
+      <feComposite in="SourceGraphic" in2="specOut" k1="0" k2="1" k3="1" k4="0" operator="arithmetic" result="litPaint"/>
+      <feMerge>
+        <feMergeNode in="offsetBlur"/>
+        <feMergeNode in="litPaint"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g class="cls-1">
+      <path class="cls-2" d="M156.94,81.86h-7.12v18.8h80.47v-18.8h-13.83l-47.99-22.8,47.99-22.9h13.83v-18.8h-80.47v18.8h7.12l-20.95,10-20.95-10h6.91v-18.8H38.96v18.8h16.34l48.2,22.85-48.2,22.85h-16.34v18.8h82.98v-18.8h-6.91l20.95-10,20.95,10Z"/>
+    </g>
+  </g>
+</svg>
