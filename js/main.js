@@ -94,7 +94,7 @@ if (window.DeviceOrientationEvent) {
 
 function createFallingObject() {
   const object = document.createElement('img');
-  object.src = 'path/to/your-image.svg'; // Replace with your SVG file path
+  object.src = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with your SVG file path
   object.classList.add('falling-object');
 
   // Set initial position and size
