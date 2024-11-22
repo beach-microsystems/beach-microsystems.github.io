@@ -78,10 +78,14 @@ const container = document.querySelector('.falling-container');
 let tiltX = 0; // Left-right tilt (gamma)
 let tiltY = 0; // Forward-backward tilt (beta)
 
-// Listen for device orientation changes
-window.addEventListener('deviceorientation', (event) => {
-  tiltX = event.gamma; // Left-right tilt (ranges from -90 to 90)
-  tiltY = event.beta;  // Forward-backward tilt (ranges from -180 to 180)
+// Add event listener for device orientation
+window.addEventListener("deviceorientation", (event) => {
+  if (event.gamma !== null && event.beta !== null) {
+    tiltX = event.gamma; // Update left-right tilt
+    tiltY = event.beta;  // Update forward-backward tilt
+  } else {
+    console.log("Device orientation values are not available.");
+  }
 });
 
 function createFallingObject() {
