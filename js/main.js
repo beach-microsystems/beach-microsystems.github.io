@@ -489,3 +489,44 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   customShader.uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
 });
+
+
+
+
+// password code 
+document.addEventListener('DOMContentLoaded', () => {
+  // Secure password hashing
+  async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Securely store the hashed password
+  const correctHash = '6043ad2514df196f795aa58aadc5da941a795fe182a63e8301ece0985aed7c4e'; // Hash for "heartbreak"
+
+  // Event listener for the Submit button
+  const passwordSubmitButton = document.getElementById('password-submit');
+  const passwordInput = document.getElementById('password-input');
+  const passwordError = document.getElementById('password-error');
+  const passwordOverlay = document.getElementById('password-overlay');
+
+  if (passwordSubmitButton && passwordInput && passwordError && passwordOverlay) {
+    passwordSubmitButton.addEventListener('click', async function () {
+      const enteredPassword = passwordInput.value;
+      const enteredHash = await hashPassword(enteredPassword);
+
+      if (enteredHash === correctHash) {
+        // Unlock the website
+        passwordOverlay.style.display = 'none';
+      } else {
+        // Show error message
+        passwordError.style.display = 'block';
+      }
+    });
+  } else {
+    console.error('Password protection elements are missing in the DOM.');
+  }
+});
