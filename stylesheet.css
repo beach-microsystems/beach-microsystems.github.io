@@ -21,6 +21,22 @@ html, body {
   z-index: 1000;
 }
 
+/* WebGL Warp Container */
+#warp-webgl {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1; /* Ensure it renders behind content */
+  pointer-events: none; /* Allow interactions with the site */
+}
+
+/* Ensure the content appears above the WebGL effect */
+#content {
+  position: relative;
+  z-index: 1;
+}
 
 .dust-image {
   pointer-events: auto; /* Dust images remain interactive */
