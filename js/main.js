@@ -152,30 +152,37 @@ function clearDust(event) {
   }
 
   const animateDust = () => {
-    const friction = 0.995;
-    const drag = 0.05;
-    velocityX -= velocityX * drag;
-    velocityY -= velocityY * drag;
+  const friction = 0.98; // Reduces velocity over time
+  const drag = 0.05; // Simulates air resistance
+  const gravity = 0.1; // Optional: Adds slight downward pull
 
-    const currentLeft = parseFloat(dustImage.style.left);
-    const currentTop = parseFloat(dustImage.style.top);
+  velocityX *= friction;
+  velocityY *= friction;
+  velocityY += gravity; // Apply gravity to simulate paper settling
 
-    dustImage.style.left = `${currentLeft + velocityX}px`;
-    dustImage.style.top = `${currentTop + velocityY}px`;
+  const currentLeft = parseFloat(dustImage.style.left) || 0;
+  const currentTop = parseFloat(dustImage.style.top) || 0;
 
-    const newRect = dustImage.getBoundingClientRect();
-    if (
-      newRect.right < 0 ||
-      newRect.bottom < 0 ||
-      newRect.left > window.innerWidth ||
-      newRect.top > window.innerHeight
-    ) {
-      dustImage.remove(); // Remove the image only when off-screen
-      return;
-    }
+  dustImage.style.left = `${currentLeft + velocityX}px`;
+  dustImage.style.top = `${currentTop + velocityY}px`;
 
-    requestAnimationFrame(animateDust);
-  };
+  // Add rotation for realism
+  const rotation = parseFloat(dustImage.style.transform.replace(/[^\d.-]/g, '')) || 0;
+  dustImage.style.transform = `rotate(${rotation + velocityX * 0.5}deg)`;
+
+  const newRect = dustImage.getBoundingClientRect();
+  if (
+    newRect.right < 0 ||
+    newRect.bottom < 0 ||
+    newRect.left > window.innerWidth ||
+    newRect.top > window.innerHeight
+  ) {
+    dustImage.remove(); // Remove the image only when off-screen
+    return;
+  }
+
+  requestAnimationFrame(animateDust);
+};
 
   requestAnimationFrame(animateDust);
 }
