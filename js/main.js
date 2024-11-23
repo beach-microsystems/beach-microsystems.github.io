@@ -284,7 +284,11 @@ dustOverlay.addEventListener("pointermove", (event) => {
 
 // Add touch support
 dustOverlay.addEventListener("pointerdown", (event) => {
+  isPointerDown = true; // Set the global flag when pointer is pressed
+
+  // Check all elements under the pointer
   const elements = document.elementsFromPoint(event.clientX, event.clientY);
+
   elements.forEach((element) => {
     if (element.classList.contains("dust-image")) {
       clearDust({ target: element, clientX: event.clientX, clientY: event.clientY });
@@ -297,7 +301,18 @@ if (dustOverlay.querySelectorAll(".dust-image").length === 0) {
   dustOverlay.style.pointerEvents = "none";
 }
 
+// Touch-specific event listeners for drag interactions
+dustOverlay.addEventListener("touchstart", (event) => {
+  isPointerDown = true; // Start tracking when the user touches the screen
+});
 
+dustOverlay.addEventListener("touchend", () => {
+  isPointerDown = false; // Stop tracking when the user lifts their finger
+});
+
+dustOverlay.addEventListener("touchcancel", () => {
+  isPointerDown = false; // Reset pointer state if the touch interaction is interrupted
+});
 
 
 // console debug click test
