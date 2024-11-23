@@ -493,21 +493,9 @@ window.addEventListener('resize', () => {
 
 
 
-// password code 
+// password code
+// Ensure the DOM is loaded before executing
 document.addEventListener('DOMContentLoaded', () => {
-  // Secure password hashing
-  async function hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
-  }
-
-  // Securely store the hashed password
-  const correctHash = '6043ad2514df196f795aa58aadc5da941a795fe182a63e8301ece0985aed7c4e'; // Hash for "heartbreak"
-
-  // Event listener for the Submit button
   const passwordSubmitButton = document.getElementById('password-submit');
   const passwordInput = document.getElementById('password-input');
   const passwordError = document.getElementById('password-error');
@@ -516,13 +504,25 @@ document.addEventListener('DOMContentLoaded', () => {
   if (passwordSubmitButton && passwordInput && passwordError && passwordOverlay) {
     passwordSubmitButton.addEventListener('click', async function () {
       const enteredPassword = passwordInput.value;
-      const enteredHash = await hashPassword(enteredPassword);
 
-      if (enteredHash === correctHash) {
-        // Unlock the website
-        passwordOverlay.style.display = 'none';
-      } else {
-        // Show error message
+      try {
+        // Send the entered password to your Render server for validation
+        const response = await fetch('https://password-server-7neo.onrender.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: enteredPassword }),
+        });
+
+        if (response.ok) {
+          // Correct password: Hide the password overlay
+          passwordOverlay.style.display = 'none';
+        } else {
+          // Incorrect password: Show error message
+          passwordError.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error connecting to the server:', error);
+        passwordError.textContent = 'An error occurred. Please try again later.';
         passwordError.style.display = 'block';
       }
     });

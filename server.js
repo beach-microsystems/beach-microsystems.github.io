@@ -1,6 +1,8 @@
 const express = require('express');
+const cors = require('cors'); // Add this line to enable CORS
 const app = express();
 
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // Middleware to parse JSON requests
 
 // Securely stored hashed password (SHA-256 of "heartbreak")
