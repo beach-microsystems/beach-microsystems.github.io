@@ -1,54 +1,54 @@
-<head>
-  <h2 id="singer" class="animate-flicker">@_╳</h2><b>InstXpendo.RipXsquad</b><br>
-  <link rel="stylesheet" href="stylesheet.css">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage</title>
+    <link rel="stylesheet" href="stylesheet.css">
+  </head>
+  <body>
+    <h2 id="singer" class="animate-flicker">@_╳</h2>
+    <b>InstXpendo.RipXsquad</b><br>
 
-<body>
+    <div id="dust-overlay"></div>
 
-  <div class="falling-container"></div>
-  <div id="dust-overlay"></div>
-
-  <!-- KISSOUT -->
-  <div class="RIPSTUPENDO button">
-    <button class="kissout accordion active">RIPSTUPENDO [Album, 2025]</button>
-    <div class="panel" style="display: none;">
-      <button class="kissout accordion active">Listen</button>
+    <!-- KISSOUT -->
+    <div class="RIPSTUPENDO button">
+      <button class="kissout accordion active">RIPSTUPENDO [Album, 2025]</button>
       <div class="panel" style="display: none;">
+        <button class="kissout accordion active">Listen</button>
+        <div class="panel" style="display: none;">
+          <div class="button-list">
+            <!-- Internal Button -->
+            <button class="accordion kissout internal-external">Internal</button>
+            <div class="panel" style="display: none;">
+              <div class="internal-container"></div>
+            </div>
 
-        <div class="button-list">
-          <!-- Internal Button -->
-          <button class="accordion kissout internal-external">Internal</button>
-          <div class="panel" style="display: none;">
-            <div class="internal-container">
-              <!-- Content for Internal -->
+            <!-- External Button -->
+            <button class="accordion kissout internal-external">External</button>
+            <div class="panel" style="display: none;">
+              <a class="link" href="https://music.apple.com/us/album/kissout-single/1712180050" target="_blank">Apple Music</a><br>
+              <a class="link" href="https://open.spotify.com/album/0yc9WuqTJdYZ4SlGM5JIS7" target="_blank">Spotify</a><br>
+              <a class="link" href="https://instupendo.bandcamp.com/album/kissout" target="_blank">Bandcamp</a><br>
+              <a class="link" href="https://instupendo.lnk.to/kissout" target="_blank">Others</a>
             </div>
           </div>
-
-          <!-- External Button -->
-          <button class="accordion kissout internal-external">External</button>
-          <div class="panel" style="display: none;">
-            <a class="link" href="https://music.apple.com/us/album/kissout-single/1712180050" target="_blank">Apple Music</a><br>
-            <a class="link" href="https://open.spotify.com/album/0yc9WuqTJdYZ4SlGM5JIS7" target="_blank">Spotify</a><br>
-            <a class="link" href="https://instupendo.bandcamp.com/album/kissout" target="_blank">Bandcamp</a><br>
-            <a class="link" href="https://instupendo.lnk.to/kissout" target="_blank">Others</a>
-          </div>
         </div>
-
-      </div>
-      <button class="kissout accordion active">Credits</button>
-      <div class="panel" style="display: none;">
-<!-- KISSOUT IMAGE:  <img src="https://f4.bcbits.com/img/a1030304111_10.jpg" alt="Kissout" style="width: 100%; max-width: 300px; margin-bottom: 1rem;">
-  -->
-        <ul class="credits-list">
-          <li>All tracks produced by x & x</li>
-          <li>All lyrics written by x</li>
-          <li>Mastered by Barry Grint (tracks01-07+09) and Gavin Bendt (track08)</li>
-          <li>Spoken voice by Barbara Braccini (tracks05+08)</li>
-          <li>Site coded by x</li>
-        </ul>
+        <button class="kissout accordion active">Credits</button>
+        <div class="panel" style="display: none;">
+          <ul class="credits-list">
+            <li>All tracks produced by x & x</li>
+            <li>All lyrics written by x</li>
+            <li>Mastered by Barry Grint (tracks01-07+09) and Gavin Bendt (track08)</li>
+            <li>Spoken voice by Barbara Braccini (tracks05+08)</li>
+            <li>Site coded by x</li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-  <script src="js/main.js"></script>
-</body>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

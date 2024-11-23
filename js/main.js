@@ -1,20 +1,34 @@
-var acc = document.getElementsByClassName("accordion");
-var i;
+let pointerSpeed = { x: 0, y: 0, magnitude: 0 }; // Track pointer velocity
+let lastPointerPosition = { x: 0, y: 0 }; // Track last pointer position
 
-for (i = 0; i < acc.length; i++) {
-  acc[i].addEventListener("click", function () {
-    // Skip "Internal" and "External" buttons
+// Track pointer movement to calculate speed
+document.addEventListener("pointermove", (event) => {
+  const currentPointerPosition = { x: event.clientX, y: event.clientY };
+
+  if (lastPointerPosition.x || lastPointerPosition.y) {
+    const deltaX = currentPointerPosition.x - lastPointerPosition.x;
+    const deltaY = currentPointerPosition.y - lastPointerPosition.y;
+
+    // Calculate pointer speed
+    pointerSpeed.x = deltaX;
+    pointerSpeed.y = deltaY;
+    pointerSpeed.magnitude = Math.sqrt(deltaX ** 2 + deltaY ** 2) || 0.1; // Avoid division by zero
+  }
+
+  lastPointerPosition = currentPointerPosition;
+});
+
+
+let lastTimestamp = 0; // Tracks last timestamp
+document.querySelectorAll(".accordion").forEach((button) => {
+  button.addEventListener("click", function () {
     if (this.classList.contains("internal-external")) return;
 
     this.classList.toggle("active");
-    var panel = this.nextElementSibling;
-    if (panel.style.display === "block") {
-      panel.style.display = "none";
-    } else {
-      panel.style.display = "block";
-    }
+    const panel = this.nextElementSibling;
+    panel.style.display = panel.style.display === "block" ? "none" : "block";
   });
-}
+});
 
 const songs = [
   { id: "hn", name: "Human Nature", src: "https://files.cargocollective.com/c1989710/KO-MASTER-24-441.mp3" },
@@ -71,8 +85,6 @@ function songname(name) {
   singerElement.innerHTML = `@⌗╳ now playing... ${name}`;
 }
 
-
-
 // Dust Pile
 const dustOverlay = document.getElementById('dust-overlay');
 const totalDustImages = 50; // Number of dust images
@@ -114,20 +126,65 @@ function createDustPile() {
 function clearDust(event) {
   const dustImage = event.target;
 
-  // Fade out and move the image slightly
-  dustImage.style.opacity = 0;
-  dustImage.style.transform = 'translateY(-50px) rotate(20deg)';
+  if (!dustImage.classList.contains("dust-image")) return;
 
-  // Remove the image from the DOM after animation
-   setTimeout(() => {
-     dustImage.remove();
+  const pointerX = event.clientX;
+  const pointerY = event.clientY;
 
-     // Re-enable scrolling if all dust is cleared
-     if (dustOverlay.children.length === 0) {
-       preventScrolling(false);
-     }
-   }, 300);
- }
+  const dustRect = dustImage.getBoundingClientRect();
+  const dustCenterX = dustRect.left + dustRect.width / 2;
+  const dustCenterY = dustRect.top + dustRect.height / 2;
+
+  const offsetX = dustCenterX - pointerX;
+  const offsetY = dustCenterY - pointerY;
+  const magnitude = Math.sqrt(offsetX ** 2 + offsetY ** 2) || 1;
+
+  const speedFactor = 15;
+  const mass = Math.random() * 2 + 0.5;
+  let velocityX = (offsetX / magnitude) * (pointerSpeed.magnitude * speedFactor) / mass;
+  let velocityY = (offsetY / magnitude) * (pointerSpeed.magnitude * speedFactor) / mass;
+
+  if (!dustImage.style.left) {
+    dustImage.style.left = `${dustRect.left}px`;
+  }
+  if (!dustImage.style.top) {
+    dustImage.style.top = `${dustRect.top}px`;
+  }
+
+  const animateDust = () => {
+    const friction = 0.995;
+    const drag = 0.05;
+    velocityX -= velocityX * drag;
+    velocityY -= velocityY * drag;
+
+    const currentLeft = parseFloat(dustImage.style.left);
+    const currentTop = parseFloat(dustImage.style.top);
+
+    dustImage.style.left = `${currentLeft + velocityX}px`;
+    dustImage.style.top = `${currentTop + velocityY}px`;
+
+    const newRect = dustImage.getBoundingClientRect();
+    if (
+      newRect.right < 0 ||
+      newRect.bottom < 0 ||
+      newRect.left > window.innerWidth ||
+      newRect.top > window.innerHeight
+    ) {
+      dustImage.remove(); // Remove the image only when off-screen
+      return;
+    }
+
+    requestAnimationFrame(animateDust);
+  };
+
+  requestAnimationFrame(animateDust);
+}
+
+dustOverlay.addEventListener("pointerdown", (event) => {
+  if (event.target.classList.contains("dust-image")) {
+    clearDust(event);
+  }
+});
 
 // Prevent scrolling when interacting with dust on mobile
 dustOverlay.addEventListener('touchstart', (event) => {
@@ -183,3 +240,57 @@ internalButton.addEventListener("click", () => {
 externalButton.addEventListener("click", () => {
   toggleInternalExternal(externalButton, externalPanel, internalButton, internalPanel);
 });
+
+// Update the pointer move listener to track speed and direction
+dustOverlay.addEventListener("pointermove", (event) => {
+  lastPointerPosition = { x: event.clientX, y: event.clientY };
+  lastTimestamp = event.timeStamp;
+});
+
+
+let isPointerDown = false; // Track if the pointer is actively down
+
+dustOverlay.addEventListener("pointerdown", (event) => {
+  isPointerDown = true; // Pointer is actively down
+});
+
+dustOverlay.addEventListener("pointerup", () => {
+  isPointerDown = false; // Reset pointer state
+});
+
+dustOverlay.addEventListener("pointermove", (event) => {
+  const elements = document.elementsFromPoint(event.clientX, event.clientY);
+
+  elements.forEach((element) => {
+    if (element.classList.contains("dust-image")) {
+      // Move the dust image with the pointer
+      clearDust({ target: element, clientX: event.clientX, clientY: event.clientY });
+    }
+  });
+
+  // Ensure overlay doesn't block interactions when no dust images remain
+  if (dustOverlay.querySelectorAll(".dust-image").length === 0) {
+    dustOverlay.style.pointerEvents = "none";
+  }
+});
+
+
+// Add touch support
+dustOverlay.addEventListener("pointerdown", (event) => {
+  const elements = document.elementsFromPoint(event.clientX, event.clientY);
+  elements.forEach((element) => {
+    if (element.classList.contains("dust-image")) {
+      clearDust({ target: element, clientX: event.clientX, clientY: event.clientY });
+    }
+  });
+});
+
+// Ensure pointer-events is enabled when there are dust images
+if (dustOverlay.querySelectorAll(".dust-image").length === 0) {
+  dustOverlay.style.pointerEvents = "none";
+}
+
+
+
+
+// console debug click test

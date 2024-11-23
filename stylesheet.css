@@ -12,21 +12,20 @@ html, body {
 
 /* Fullscreen container for the overlay */
 #dust-overlay {
+  pointer-events: none; /* Allow clicks to pass through */
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* Allow clicks to pass through by default */
-  z-index: 1000; /* Ensure it's above the content */
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
 }
 
+
 .dust-image {
+  pointer-events: auto; /* Dust images remain interactive */
   position: absolute;
-  cursor: pointer;
-  opacity: 1;
-  pointer-events: auto; /* Enable interaction only on the images themselves */
-  transition: opacity 0.3s ease, transform 0.3s ease; /* Smooth fading and movement */
+  z-index: 1001; /* Ensure they are above the accordion visually */
 }
 
 .accordion {
@@ -147,6 +146,7 @@ h2 {
 }
 
 body {
+  pointer-events: auto; /* Ensure normal page interactions */
   font-size: 1rem;
   font-family: "helveticaa-ul", sans-serif;
   color: #FFFFFF;
