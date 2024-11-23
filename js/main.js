@@ -140,7 +140,7 @@ function clearDust(event) {
   const magnitude = Math.sqrt(offsetX ** 2 + offsetY ** 2) || 1;
 
   const speedFactor = 15;
-  const mass = Math.random() * 2 + 0.5;
+  const mass = Math.random() * 5 + 0;
   let velocityX = (offsetX / magnitude) * (pointerSpeed.magnitude * speedFactor) / mass;
   let velocityY = (offsetY / magnitude) * (pointerSpeed.magnitude * speedFactor) / mass;
 
@@ -156,8 +156,10 @@ function clearDust(event) {
   const drag = 0.05; // Simulates air resistance
   const gravity = 0.1; // Optional: Adds slight downward pull
 
-  velocityX *= friction;
-  velocityY *= friction;
+  const velocityScale = 1; // Dampens reaction to speed
+
+  velocityX = (velocityX * velocityScale) * friction;
+  velocityY = (velocityY * velocityScale) * friction;
   velocityY += gravity; // Apply gravity to simulate paper settling
 
   const currentLeft = parseFloat(dustImage.style.left) || 0;
