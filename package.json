@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "express": "^4.17.3",
-    "cors": "^2.8.5" // Add this line for the cors package
+    "cors": "^2.8.5"
   }
 }
