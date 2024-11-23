@@ -265,12 +265,13 @@ dustOverlay.addEventListener("pointerup", () => {
   isPointerDown = false; // Reset pointer state
 });
 
-dustOverlay.addEventListener("pointermove", (event) => {
+document.addEventListener("pointermove", (event) => {
+  if (!isPointerDown) return; // Only activate when the pointer is actively down
+
   const elements = document.elementsFromPoint(event.clientX, event.clientY);
 
   elements.forEach((element) => {
     if (element.classList.contains("dust-image")) {
-      // Move the dust image with the pointer
       clearDust({ target: element, clientX: event.clientX, clientY: event.clientY });
     }
   });
@@ -302,16 +303,16 @@ if (dustOverlay.querySelectorAll(".dust-image").length === 0) {
 }
 
 // Touch-specific event listeners for drag interactions
-dustOverlay.addEventListener("touchstart", (event) => {
-  isPointerDown = true; // Start tracking when the user touches the screen
+document.addEventListener("touchstart", (event) => {
+  isPointerDown = true; // Start tracking globally on touch devices
 });
 
-dustOverlay.addEventListener("touchend", () => {
-  isPointerDown = false; // Stop tracking when the user lifts their finger
+document.addEventListener("touchend", () => {
+  isPointerDown = false; // Stop tracking globally when the user lifts their finger
 });
 
-dustOverlay.addEventListener("touchcancel", () => {
-  isPointerDown = false; // Reset pointer state if the touch interaction is interrupted
+document.addEventListener("touchcancel", () => {
+  isPointerDown = false; // Reset pointer state globally if the touch interaction is interrupted
 });
 
 
