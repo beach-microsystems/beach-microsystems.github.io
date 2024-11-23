@@ -198,8 +198,20 @@ dustOverlay.addEventListener('touchstart', (event) => {
   event.preventDefault();
 }, { passive: false });
 
-dustOverlay.addEventListener('touchmove', (event) => {
-  event.preventDefault();
+document.addEventListener("touchmove", (event) => {
+  if (!isPointerDown) return; // Only activate when the user is actively dragging
+
+  // Get touch position
+  const touch = event.touches[0];
+  const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+
+  elements.forEach((element) => {
+    if (element.classList.contains("dust-image")) {
+      clearDust({ target: element, clientX: touch.clientX, clientY: touch.clientY });
+    }
+  });
+
+  event.preventDefault(); // Prevent scrolling during drag
 }, { passive: false });
 
 // Initialize the dust pile
@@ -265,13 +277,12 @@ dustOverlay.addEventListener("pointerup", () => {
   isPointerDown = false; // Reset pointer state
 });
 
-document.addEventListener("pointermove", (event) => {
-  if (!isPointerDown) return; // Only activate when the pointer is actively down
-
+dustOverlay.addEventListener("pointermove", (event) => {
   const elements = document.elementsFromPoint(event.clientX, event.clientY);
 
   elements.forEach((element) => {
     if (element.classList.contains("dust-image")) {
+      // Move the dust image with the pointer
       clearDust({ target: element, clientX: event.clientX, clientY: event.clientY });
     }
   });
@@ -305,14 +316,15 @@ if (dustOverlay.querySelectorAll(".dust-image").length === 0) {
 // Touch-specific event listeners for drag interactions
 document.addEventListener("touchstart", (event) => {
   isPointerDown = true; // Start tracking globally on touch devices
+  lastPointerPosition = { x: event.touches[0].clientX, y: event.touches[0].clientY }; // Track initial touch position
 });
 
 document.addEventListener("touchend", () => {
-  isPointerDown = false; // Stop tracking globally when the user lifts their finger
+  isPointerDown = false; // Stop tracking globally
 });
 
-document.addEventListener("touchcancel", () => {
-  isPointerDown = false; // Reset pointer state globally if the touch interaction is interrupted
+dustOverlay.addEventListener("touchcancel", () => {
+  isPointerDown = false; // Reset pointer state if the touch interaction is interrupted
 });
 
 
