@@ -382,6 +382,12 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.domElement.id = 'background-canvas'; // Optional: give it an ID
+document.getElementById('background-webgl').appendChild(renderer.domElement);
+
+
+
+renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.getElementById('warp-webgl').appendChild(renderer.domElement);
 
@@ -544,6 +550,122 @@ window.addEventListener('resize', () => {
   verticalShader.uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
 });
 
-//p5
+// Create a new dynamic background scene
+function createDynamicBackground() {
+  // Create a new scene for the background
+  const scene = new THREE.Scene();
 
-// p5.js Sketch for Stylish Background
+  // Create a camera
+  const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+  camera.position.z = 50; // Adjust the camera's distance from the background
+
+  // Create a renderer for the background and attach it to #background-webgl
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.domElement.id = 'background-canvas'; // Optional: give the canvas an ID
+  document.getElementById('background-webgl').appendChild(renderer.domElement);
+
+  // Add a gradient plane (sunset effect)
+  const gradientPlane = createGradientPlane();
+  scene.add(gradientPlane);
+
+  // Add floating shapes
+  const floatingShapes = createFloatingShapes();
+  scene.add(floatingShapes);
+
+  // Add fog for depth
+  scene.fog = new THREE.Fog(0x0a0a0a, 10, 100); // Dark gray fog for depth effect
+
+  // Animation loop for the background
+  function animateBackground() {
+    requestAnimationFrame(animateBackground);
+
+    // Update floating shapes' positions and rotations
+    floatingShapes.children.forEach((shape, index) => {
+      shape.position.y += Math.sin(performance.now() * 0.001 + index) * 0.01; // Subtle vertical motion
+      shape.rotation.y += 0.01; // Slow rotation
+    });
+
+    // Render the background scene
+    renderer.render(scene, camera);
+  }
+
+  animateBackground();
+
+  // Handle window resizing
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+// Helper function to create a gradient plane
+function createGradientPlane() {
+  const geometry = new THREE.PlaneGeometry(100, 100, 1, 1);
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      topColor: { value: new THREE.Color(0xff6b6b) }, // Warm pink
+      bottomColor: { value: new THREE.Color(0x6a1b9a) }, // Deep purple
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform vec3 topColor;
+      uniform vec3 bottomColor;
+      void main() {
+        gl_FragColor = vec4(mix(bottomColor, topColor, vUv.y), 1.0);
+      }
+    `,
+    side: THREE.DoubleSide,
+  });
+  const plane = new THREE.Mesh(geometry, material);
+  plane.rotation.x = -Math.PI / 2; // Lay flat
+  plane.position.y = -10; // Position below the objects
+  return plane;
+}
+
+// Helper function to create floating shapes
+function createFloatingShapes() {
+  const group = new THREE.Group();
+
+  const shapes = ['sphere', 'cube', 'torus']; // Different shape types
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    metalness: 0.6,
+    roughness: 0.4,
+    emissive: new THREE.Color(0x402020),
+  });
+
+  for (let i = 0; i < 20; i++) {
+    const geometry =
+      shapes[Math.floor(Math.random() * shapes.length)] === 'sphere'
+        ? new THREE.SphereGeometry(Math.random() * 2 + 1, 16, 16)
+        : new THREE.BoxGeometry(Math.random() * 2 + 1, Math.random() * 2 + 1, Math.random() * 2 + 1);
+
+    const mesh = new THREE.Mesh(geometry, material);
+
+    mesh.position.set(
+      Math.random() * 50 - 25, // Random x position
+      Math.random() * 10 + 5, // Random y position
+      Math.random() * 50 - 25 // Random z position
+    );
+
+    group.add(mesh);
+  }
+  return group;
+}
+
+// Call the createDynamicBackground function to activate the background
+createDynamicBackground();

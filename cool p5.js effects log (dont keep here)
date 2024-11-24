@@ -1,0 +1,130 @@
+Cool p5 effects
+
+
+//purple and white vespertine-like effect:
+
+function setup() {
+  let canvas = createCanvas(windowWidth, windowHeight);
+  canvas.parent('warp-webgl');
+  noLoop();
+}
+
+function draw() {
+  // Gradient Background
+  for (let y = 0; y < height; y++) {
+    let inter = map(y, 0, height, 0, 1);
+    let color1 = color(10, 10, 50); // Deep navy
+    let color2 = color(200, 180, 220); // Soft lavender
+    stroke(lerpColor(color1, color2, inter));
+    line(0, y, width, y);
+  }
+
+  // Draw multiple fractal-like patterns
+  for (let i = 0; i < 5; i++) {
+    push();
+    let x = random(width * 0.2, width * 0.8);
+    let depth = int(random(5, 8));
+    translate(x, height);
+    strokeWeight(1.5); // Thin, delicate lines
+    fractalPattern(120, depth); // Adjust branch length and depth
+    pop();
+  }
+}
+
+function fractalPattern(len, depth) {
+  let baseColor = color(255, 255, 255, 150); // Glowing white
+  stroke(baseColor);
+  line(0, 0, 0, -len);
+  translate(0, -len);
+
+  if (depth > 0) {
+    for (let i = -1; i <= 1; i += 2) { // Create two branches
+      push();
+      rotate(i * radians(30)); // Symmetry with slight randomness
+      fractalPattern(len * 0.7, depth - 1);
+      pop();
+    }
+  }
+
+  // Add glowing nodes at the branch tips
+  if (depth === 0) {
+    noStroke();
+    fill(255, 255, 200, 200); // Soft gold glow
+    ellipse(0, 0, 8, 8);
+
+    fill(255, 255, 255, 100); // Outer halo
+    ellipse(0, 0, 20, 20);
+  }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  redraw(); // Re-render fractals on resize
+}
+
+////////////////////////////////////////
+////////////////////////////////////////
+////////////////////////////////////////
+////////////////////////////////////////
+// another vespertine one:
+
+function setup() {
+  let canvas = createCanvas(windowWidth, windowHeight);
+  canvas.parent('warp-webgl');
+  noLoop();
+}
+
+function draw() {
+  // Gradient Background
+  for (let y = 0; y < height; y++) {
+    let inter = map(y, 0, height, 0, 1);
+    let color1 = color(10, 10, 50); // Deep navy
+    let color2 = color(200, 180, 220); // Soft lavender
+    stroke(lerpColor(color1, color2, inter));
+    line(0, y, width, y);
+  }
+
+  // Draw multiple fractal-like snowflakes
+  for (let i = 0; i < 7; i++) {
+    push();
+    let x = random(width * 0.2, width * 0.8);
+    let y = random(height * 0.2, height * 0.8);
+    translate(x, y); // Center of snowflake
+    strokeWeight(1);
+    for (let j = 0; j < 6; j++) { // 6 symmetric branches
+      push();
+      rotate(TWO_PI * (j / 6)); // Symmetry
+      fractalPattern(80, 5); // Adjust branch length and depth
+      pop();
+    }
+    pop();
+  }
+}
+
+function fractalPattern(len, depth) {
+  let branchColor = color(255, 255, 255, 150); // Glowing white
+  stroke(branchColor);
+  line(0, 0, 0, -len);
+  translate(0, -len);
+
+  if (depth > 0) {
+    for (let i = -1; i <= 1; i += 2) { // Create two branches
+      push();
+      rotate(i * radians(30)); // Symmetric branching
+      fractalPattern(len * 0.7, depth - 1);
+      pop();
+    }
+  }
+
+  // Add glowing nodes at the branch tips
+  if (depth === 0) {
+    noStroke();
+    fill(255, 255, 255, 200); // Glow
+    ellipse(0, 0, 6, 6);
+  }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  redraw();
+}
