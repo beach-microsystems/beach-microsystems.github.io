@@ -552,141 +552,135 @@ window.addEventListener('resize', () => {
 ////////////////////////////////////////////
 // Create a new dynamic background scene below////
 ////////////////////////////////////////////
-function createUnprecedentedComplexBackground() {
-  console.log("Dynamic Background: Unprecedented Complexity Initializing...");
+function createInfiniteSentientNebula() {
+  console.log("Dynamic Background: Infinite Sentient Nebula Initializing...");
 
-  // Create WebGL Canvas
-  const canvas = document.createElement("canvas");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  canvas.style.position = "fixed";
-  canvas.style.top = "0";
-  canvas.style.left = "0";
-  canvas.style.zIndex = "-1";
-  canvas.style.pointerEvents = "none";
-  document.body.appendChild(canvas);
+  // Scene and Renderer Setup
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 0, 5);
 
-  const gl = canvas.getContext("webgl");
-  if (!gl) {
-    console.error("WebGL is not supported.");
-    return;
+  const renderer = new THREE.WebGLRenderer({ alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.domElement.style.position = "fixed";
+  renderer.domElement.style.top = "0";
+  renderer.domElement.style.left = "0";
+  renderer.domElement.style.zIndex = "-1";
+  renderer.domElement.style.pointerEvents = "none";
+  document.body.appendChild(renderer.domElement);
+
+  // Shader Material for Nebula
+  const nebulaMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+      uMouse: { value: new THREE.Vector2(0, 0) },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      precision highp float;
+
+      uniform float uTime;
+      uniform vec2 uResolution;
+      uniform vec2 uMouse;
+
+      varying vec2 vUv;
+
+      // Noise Functions
+      float random(vec2 st) {
+        return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+      }
+
+      float noise(vec2 st) {
+        vec2 i = floor(st);
+        vec2 f = fract(st);
+        float a = random(i);
+        float b = random(i + vec2(1.0, 0.0));
+        float c = random(i + vec2(0.0, 1.0));
+        float d = random(i + vec2(1.0, 1.0));
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+      }
+
+      // Nebula Glow
+      vec3 nebula(vec2 uv) {
+        float d = distance(uv, vec2(0.5)) * 2.0;
+        float glow = exp(-d * 10.0) * sin(uTime * 2.0) * 0.5;
+        return vec3(glow, glow * 0.7, glow * 1.2);
+      }
+
+      void main() {
+        vec2 uv = gl_FragCoord.xy / uResolution.xy;
+        vec2 mouseShift = uMouse / uResolution;
+
+        vec3 color = vec3(0.0);
+        for (float i = 0.0; i < 5.0; i++) {
+          uv += 0.01 * vec2(sin(uTime + i), cos(uTime + i));
+          color += nebula(uv + mouseShift) * (0.2 / (i + 1.0));
+        }
+
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `,
+    transparent: true,
+  });
+
+  // Nebula Plane
+  const nebulaPlane = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), nebulaMaterial);
+  scene.add(nebulaPlane);
+
+  // Particle Core
+  const particleCount = 50000;
+  const particleGeometry = new THREE.BufferGeometry();
+  const particlePositions = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.random() * 1.5 + 0.5;
+    particlePositions[i * 3] = Math.cos(angle) * radius;
+    particlePositions[i * 3 + 1] = Math.sin(angle) * radius;
+    particlePositions[i * 3 + 2] = Math.random() * 0.5 - 0.25;
   }
 
-  // Shaders
-  const vertexShaderSource = `
-    attribute vec4 aPosition;
-    void main() {
-      gl_Position = aPosition;
-    }
-  `;
+  particleGeometry.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
 
-  const fragmentShaderSource = `
-    precision mediump float;
+  const particleMaterial = new THREE.PointsMaterial({
+    size: 0.03,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.8,
+  });
 
-    uniform float uTime;
-    uniform vec2 uResolution;
+  const particles = new THREE.Points(particleGeometry, particleMaterial);
+  scene.add(particles);
 
-    float random(vec2 st) {
-      return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-    }
-
-    float noise(vec2 st) {
-      vec2 i = floor(st);
-      vec2 f = fract(st);
-      float a = random(i);
-      float b = random(i + vec2(1.0, 0.0));
-      float c = random(i + vec2(0.0, 1.0));
-      float d = random(i + vec2(1.0, 1.0));
-      vec2 u = f * f * (3.0 - 2.0 * f);
-      return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-    }
-
-    void main() {
-      vec2 st = gl_FragCoord.xy / uResolution.xy;
-      st *= 2.0;
-
-      float n = noise(st + uTime * 0.1);
-      float glow = 0.2 + 0.8 * sin(uTime + st.x * 3.14);
-
-      vec3 color = vec3(n * glow, st.y * n, glow);
-
-      gl_FragColor = vec4(color, 1.0);
-    }
-  `;
-
-  // Shader Utility Functions
-  function createShader(gl, type, source) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error(gl.getShaderInfoLog(shader));
-      gl.deleteShader(shader);
-      return null;
-    }
-    return shader;
-  }
-
-  function createProgram(gl, vertexShader, fragmentShader) {
-    const program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error(gl.getProgramInfoLog(program));
-      gl.deleteProgram(program);
-      return null;
-    }
-    return program;
-  }
-
-  // Initialize Shaders
-  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-  const program = createProgram(gl, vertexShader, fragmentShader);
-
-  const positionAttributeLocation = gl.getAttribLocation(program, "aPosition");
-  const timeUniformLocation = gl.getUniformLocation(program, "uTime");
-  const resolutionUniformLocation = gl.getUniformLocation(program, "uResolution");
-
-  const positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  const positions = [
-    -1, -1,
-    1, -1,
-    -1, 1,
-    -1, 1,
-    1, -1,
-    1, 1,
-  ];
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-  gl.useProgram(program);
-
-  gl.enableVertexAttribArray(positionAttributeLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-
-  gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+  // Mouse Interaction for Depth and Motion
+  const mouse = new THREE.Vector2(0, 0);
+  document.addEventListener("mousemove", (event) => {
+    mouse.x = event.clientX - window.innerWidth / 2;
+    mouse.y = -(event.clientY - window.innerHeight / 2);
+    nebulaMaterial.uniforms.uMouse.value.set(mouse.x, mouse.y);
+  });
 
   // Animation Loop
-  let time = 0;
-  function render() {
-    time += 0.01;
-    gl.uniform1f(timeUniformLocation, time);
+  function animate() {
+    nebulaMaterial.uniforms.uTime.value += 0.01;
+    nebulaPlane.rotation.z += 0.001;
+    particles.rotation.y += 0.0005;
 
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-    requestAnimationFrame(render);
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
   }
 
-  render();
+  animate();
 
-  console.log("Dynamic Background: Unprecedented Complexity Initialized.");
+  console.log("Dynamic Background: Infinite Sentient Nebula Initialized.");
 }
 
-createUnprecedentedComplexBackground();
+createInfiniteSentientNebula();
