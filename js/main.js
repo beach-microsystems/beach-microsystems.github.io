@@ -552,59 +552,141 @@ window.addEventListener('resize', () => {
 ////////////////////////////////////////////
 // Create a new dynamic background scene below////
 ////////////////////////////////////////////
-function createFireflyParticles() {
-  console.log("Dynamic Background: Firefly Particles Initializing...");
+function createUnprecedentedComplexBackground() {
+  console.log("Dynamic Background: Unprecedented Complexity Initializing...");
 
-  const fireflyScene = new THREE.Scene();
-  const fireflyCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  fireflyCamera.position.z = 10;
+  // Create WebGL Canvas
+  const canvas = document.createElement("canvas");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.position = "fixed";
+  canvas.style.top = "0";
+  canvas.style.left = "0";
+  canvas.style.zIndex = "-1";
+  canvas.style.pointerEvents = "none";
+  document.body.appendChild(canvas);
 
-  const fireflyRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  fireflyRenderer.setSize(window.innerWidth, window.innerHeight);
-  document.getElementById("background-webgl").appendChild(fireflyRenderer.domElement);
-
-  const particleCount = 5000;
-  const particleGeometry = new THREE.BufferGeometry();
-  const positions = new Float32Array(particleCount * 3);
-
-  for (let i = 0; i < particleCount; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 20;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+  const gl = canvas.getContext("webgl");
+  if (!gl) {
+    console.error("WebGL is not supported.");
+    return;
   }
 
-  particleGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  // Shaders
+  const vertexShaderSource = `
+    attribute vec4 aPosition;
+    void main() {
+      gl_Position = aPosition;
+    }
+  `;
 
-  const particleMaterial = new THREE.PointsMaterial({
-    size: 0.1,
-    map: new THREE.TextureLoader().load("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/sprites/disc.png"),
-    transparent: true,
-    color: 0xffcc00,
-    blending: THREE.AdditiveBlending,
-    opacity: 0.8,
-  });
+  const fragmentShaderSource = `
+    precision mediump float;
 
-  const particles = new THREE.Points(particleGeometry, particleMaterial);
-  fireflyScene.add(particles);
+    uniform float uTime;
+    uniform vec2 uResolution;
 
-  // Animation
-  function animateFireflies() {
-    requestAnimationFrame(animateFireflies);
+    float random(vec2 st) {
+      return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+    }
 
-    particles.rotation.y += 0.001;
-    particles.rotation.x += 0.0005;
+    float noise(vec2 st) {
+      vec2 i = floor(st);
+      vec2 f = fract(st);
+      float a = random(i);
+      float b = random(i + vec2(1.0, 0.0));
+      float c = random(i + vec2(0.0, 1.0));
+      float d = random(i + vec2(1.0, 1.0));
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+    }
 
-    fireflyRenderer.render(fireflyScene, fireflyCamera);
+    void main() {
+      vec2 st = gl_FragCoord.xy / uResolution.xy;
+      st *= 2.0;
+
+      float n = noise(st + uTime * 0.1);
+      float glow = 0.2 + 0.8 * sin(uTime + st.x * 3.14);
+
+      vec3 color = vec3(n * glow, st.y * n, glow);
+
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
+
+  // Shader Utility Functions
+  function createShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
   }
-  animateFireflies();
 
-  window.addEventListener("resize", () => {
-    fireflyCamera.aspect = window.innerWidth / window.innerHeight;
-    fireflyCamera.updateProjectionMatrix();
-    fireflyRenderer.setSize(window.innerWidth, window.innerHeight);
-  });
+  function createProgram(gl, vertexShader, fragmentShader) {
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error(gl.getProgramInfoLog(program));
+      gl.deleteProgram(program);
+      return null;
+    }
+    return program;
+  }
 
-  console.log("Dynamic Background: Firefly Particles Initialized.");
+  // Initialize Shaders
+  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+  const program = createProgram(gl, vertexShader, fragmentShader);
+
+  const positionAttributeLocation = gl.getAttribLocation(program, "aPosition");
+  const timeUniformLocation = gl.getUniformLocation(program, "uTime");
+  const resolutionUniformLocation = gl.getUniformLocation(program, "uResolution");
+
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  const positions = [
+    -1, -1,
+    1, -1,
+    -1, 1,
+    -1, 1,
+    1, -1,
+    1, 1,
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  gl.useProgram(program);
+
+  gl.enableVertexAttribArray(positionAttributeLocation);
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+  gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+
+  // Animation Loop
+  let time = 0;
+  function render() {
+    time += 0.01;
+    gl.uniform1f(timeUniformLocation, time);
+
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    requestAnimationFrame(render);
+  }
+
+  render();
+
+  console.log("Dynamic Background: Unprecedented Complexity Initialized.");
 }
 
-createFireflyParticles();
+createUnprecedentedComplexBackground();
