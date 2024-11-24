@@ -1,3 +1,4 @@
+const shaders = []; // Store all shader materials
 let pointerSpeed = { x: 0, y: 0, magnitude: 0 }; // Track pointer velocity
 let lastPointerPosition = { x: 0, y: 0 }; // Track last pointer position
 
@@ -62,7 +63,7 @@ function togglePlay(songId) {
 
  // Add event listener for when playback ends
   audio.addEventListener("ended", () => {
-    customShader.uniforms.u_audio.value = 0.0; // Reset audio uniform
+    verticalShader.uniforms.u_audio.value = 0.0; // Reset audio uniform
     console.log(`${song.name} playback ended`);
   });
 
@@ -374,7 +375,11 @@ document.addEventListener("touchend", () => {
 dustOverlay.addEventListener("touchcancel", () => {
   isPointerDown = false; // Reset pointer state if the touch interaction is interrupted
 });
-//
+//Shaders
+
+const SHADER_COLOR = new THREE.Color(1.0, 0.0, 0.0); // Example: Red color
+
+
 
 // Initialize Three.js Scene
 const scene = new THREE.Scene();
@@ -384,57 +389,93 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.getElementById('warp-webgl').appendChild(renderer.domElement);
 
+
 // Fullscreen Plane for Shader
 const planeGeometry = new THREE.PlaneGeometry(2, 2);
-const customShader = new THREE.ShaderMaterial({
-  uniforms: {
-    u_time: { value: 0 },
-    u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
-    u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-    u_audio: { value: 0.0 }, // Add this to handle audio reactivity
-  },
-  vertexShader: `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: `
+function createShaderMaterial(vertexShader, fragmentShader, customUniforms = {}) {
+    const defaultUniforms = {
+        u_time: { value: 0 },
+        u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+    };
+    return new THREE.ShaderMaterial({
+        uniforms: { ...defaultUniforms, ...customUniforms },
+        vertexShader,
+        fragmentShader,
+    });
+}
+
+const verticalShader = new THREE.ShaderMaterial({
+    uniforms: {
+        u_time: { value: 0 },
+        u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
+        u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+        u_audio: { value: 0.0 },
+        u_lineColor: { value: SHADER_COLOR }, // Use constant color
+    },
+    vertexShader: `
+        varying vec2 vUv;
+
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
   precision highp float;
-  uniform float u_time;
   uniform float u_audio;
+  uniform vec3 u_lineColor; // Uniform for dynamic color
   varying vec2 vUv;
 
   void main() {
-    vec2 uv = vUv;
+      vec2 uv = vUv * 10.0; // Scale UV coordinates for multiple lines
 
-    // Parameters for line structure
-    float lineWidth = 0.005; // Base line thickness
-    float lineSpacing = 0.1; // Spacing between lines
-    float dynamicWidth = lineWidth + u_audio * 0.02; // Increase line width with audio
+      // Line parameters
+      float lineWidth = 0.005 + u_audio * 0.02; // Increase thickness with audio
+      float lineSpacing = 0.1; // Keep spacing consistent
 
-    // Create vertical lines
-    float lines = step(fract(uv.x / lineSpacing), dynamicWidth);
+      // Calculate line visibility
+      float centerDist = abs(fract(uv.x / lineSpacing) - 0.5); // Distance from center of each line
+      float lines = step(centerDist, lineWidth); // Render lines with increased thickness
 
-    // Define colors
-    vec3 backgroundColor = vec3(209.0 / 255.0, 211.0 / 255.0, 212.0 / 255.0); // Light grey background
-    vec3 lineColor = vec3(1.0, 0.0, 0.0); // Red lines
-
-    // Combine background and lines
-    vec3 color = mix(backgroundColor, lineColor, lines);
-
-    gl_FragColor = vec4(color, 1.0);
+      vec3 color = u_lineColor * lines; // Set line color
+      gl_FragColor = vec4(color, lines);
   }
 `,
 });
 
-// Add Plane to Scene
-const plane = new THREE.Mesh(
-  new THREE.PlaneGeometry(2, 2),
-  customShader
-);
-scene.add(plane);
+// Add the verticalShader to the centralized array
+shaders.push(verticalShader);
+
+function createShaderPlane(shaderMaterial, position = { x: 0, y: 0, z: 0 }, scale = { x: 10, y: 10 }) {
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), shaderMaterial);
+    plane.position.set(position.x, position.y, position.z);
+    plane.scale.set(scale.x, scale.y, 1);
+    return plane;
+}
+
+const verticalPlane = createShaderPlane(verticalShader, { x: 0, y: 0, z: -3 });
+scene.add(verticalPlane);
+
+function updateAudioUniform(audioLevel) {
+    shaders.forEach(shader => {
+        if (shader.uniforms.u_audio) {
+            shader.uniforms.u_audio.value = audioLevel;
+        }
+    });
+}
+
+function updateShaderUniforms(time, resolution) {
+    shaders.forEach(shader => {
+        if (shader.uniforms.u_time) {
+            shader.uniforms.u_time.value = time;
+        }
+        if (shader.uniforms.u_resolution) {
+            shader.uniforms.u_resolution.value.set(resolution.x, resolution.y);
+        }
+    });
+    // Update smoothed audio uniform
+    updateAudioUniform(smoothedAudio);
+}
 
 // Set Camera Position
 camera.position.z = 1;
@@ -460,14 +501,7 @@ function animate() {
   }
 
   // Update shader uniforms
-  if (customShader && customShader.uniforms) {
-    if (customShader.uniforms.u_audio) {
-      customShader.uniforms.u_audio.value = smoothedAudio; // Use the smoothed audio value
-    }
-    if (customShader.uniforms.u_time) {
-      customShader.uniforms.u_time.value = clock.getElapsedTime(); // Update time uniform
-    }
-  }
+  updateShaderUniforms(clock.getElapsedTime(), { x: window.innerWidth, y: window.innerHeight });
 
   // Render scene
   renderer.render(scene, camera);
@@ -480,12 +514,12 @@ animate();
 
 // Update Uniforms on Mouse Movement
 document.addEventListener('mousemove', (event) => {
-  customShader.uniforms.u_mouse.value.x = event.clientX / window.innerWidth;
-  customShader.uniforms.u_mouse.value.y = 1.0 - event.clientY / window.innerHeight; // Invert Y-axis for WebGL
+  verticalShader.uniforms.u_mouse.value.x = event.clientX / window.innerWidth;
+  verticalShader.uniforms.u_mouse.value.y = 1.0 - event.clientY / window.innerHeight; // Invert Y-axis for WebGL
 });
 
 // Handle Resizing
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
-  customShader.uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
+  verticalShader.uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
 });

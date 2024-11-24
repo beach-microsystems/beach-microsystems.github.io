@@ -19,6 +19,23 @@ html, body {
   right: 0;
   bottom: 0;
   z-index: 1000;
+  background-color: transparent !important;
+}
+
+body {
+  pointer-events: auto; /* Ensure normal page interactions */
+  font-size: 1rem;
+  font-family: "helveticaa-ul", sans-serif;
+  color: #FFFFFF;
+  font-style: normal;
+  font-weight: 250;
+  background-color: #D1D3D4;
+  display: block;
+  line-height: 0.9;
+  font-family: "helveticaa-ul";
+  padding: 0 1rem;
+  margin: 0; /* Remove any additional margins around the panel */
+  line-height: 0.9;
 }
 
 /* WebGL Warp Container */
@@ -30,6 +47,11 @@ html, body {
   height: 100vh;
   z-index: -1; /* Ensure it renders behind content */
   pointer-events: none; /* Allow interactions with the site */
+  background-color: transparent !important;
+}
+
+canvas {
+    background-color: transparent !important;
 }
 
 /* Ensure the content appears above the WebGL effect */
@@ -159,23 +181,6 @@ h2 {
     color: inherit;
     text-decoration: underline;
     text-decoration-color: #ff00ff38;
-}
-
-body {
-  pointer-events: auto; /* Ensure normal page interactions */
-  font-size: 1rem;
-  font-family: "helveticaa-ul", sans-serif;
-  color: #FFFFFF;
-  font-style: normal;
-  font-weight: 250;
-  background-color: transparent;
-  display: block;
-  line-height: 0.9;
-  font-family: "helveticaa-ul";
-  background-color: #D1D3D4;
-  padding: 0 1rem;
-  margin: 0; /* Remove any additional margins around the panel */
-  line-height: 0.9;
 }
 
 @media (max-width: 768px) {
