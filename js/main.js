@@ -552,8 +552,8 @@ window.addEventListener('resize', () => {
 ////////////////////////////////////////////
 // Create a new dynamic background scene below////
 ////////////////////////////////////////////
-function createUnprecedentedComplexBackground() {
-  console.log("Dynamic Background: Unprecedented Complexity Initializing...");
+function createChanelInspiredBackground() {
+  console.log("Dynamic Background: Chanel-Inspired Elegance Initializing...");
 
   // Create WebGL Canvas
   const canvas = document.createElement("canvas");
@@ -572,7 +572,7 @@ function createUnprecedentedComplexBackground() {
     return;
   }
 
-  // Shaders
+  // Shaders for delicate, sophisticated motion and glow
   const vertexShaderSource = `
     attribute vec4 aPosition;
     void main() {
@@ -586,41 +586,35 @@ function createUnprecedentedComplexBackground() {
     uniform float uTime;
     uniform vec2 uResolution;
 
-    float random(vec2 st) {
-      return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-    }
-
+    // Subtle Perlin noise function for elegant wave patterns
     float noise(vec2 st) {
       vec2 i = floor(st);
       vec2 f = fract(st);
-      float a = random(i);
-      float b = random(i + vec2(1.0, 0.0));
-      float c = random(i + vec2(0.0, 1.0));
-      float d = random(i + vec2(1.0, 1.0));
-      vec2 u = f * f * (3.0 - 2.0 * f);
-      return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+      float a = fract(sin(dot(i, vec2(12.9898, 78.233))) * 43758.5453123);
+      float b = fract(sin(dot(i + vec2(1.0, 0.0), vec2(12.9898, 78.233))) * 43758.5453123);
+      float c = fract(sin(dot(i + vec2(0.0, 1.0), vec2(12.9898, 78.233))) * 43758.5453123);
+      return mix(a, b, f.x) + (c - a) * f.y * (1.0 - f.x);
     }
 
     void main() {
       vec2 st = gl_FragCoord.xy / uResolution.xy;
-      st *= 2.0;
 
-      float n = noise(st + uTime * 0.1);
-      float glow = 0.2 + 0.8 * sin(uTime + st.x * 3.14);
-
-      vec3 color = vec3(n * glow, st.y * n, glow);
+      // Adjusting the pattern's scale and flow to create elegant curves
+      vec3 color = vec3(0.9 + noise(st + uTime * 0.1) * 0.1,  // light grey
+                        0.8 + noise(st + uTime * 0.2) * 0.05, // subtle gold
+                        1.0 - noise(st + uTime * 0.3) * 0.1); // soft white
 
       gl_FragColor = vec4(color, 1.0);
     }
   `;
 
-  // Shader Utility Functions
+  // Shader utility functions
   function createShader(gl, type, source) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error(gl.getShaderInfoLog(shader));
+      console.error("Shader compile error: ", gl.getShaderInfoLog(shader));
       gl.deleteShader(shader);
       return null;
     }
@@ -633,14 +627,14 @@ function createUnprecedentedComplexBackground() {
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error(gl.getProgramInfoLog(program));
+      console.error("Program link error: ", gl.getProgramInfoLog(program));
       gl.deleteProgram(program);
       return null;
     }
     return program;
   }
 
-  // Initialize Shaders
+  // Initialize shaders
   const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
   const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
   const program = createProgram(gl, vertexShader, fragmentShader);
@@ -686,7 +680,7 @@ function createUnprecedentedComplexBackground() {
 
   render();
 
-  console.log("Dynamic Background: Unprecedented Complexity Initialized.");
+  console.log("Dynamic Background: Chanel-Inspired Elegance Initialized.");
 }
 
-createUnprecedentedComplexBackground();
+createChanelInspiredBackground();
