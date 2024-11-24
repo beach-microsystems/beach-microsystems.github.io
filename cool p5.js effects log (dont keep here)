@@ -128,3 +128,493 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   redraw();
 }
+
+
+////////
+///////
+////////
+
+// not p5.js but cool three.js grass thing
+
+function createDynamicBackground() {
+  const scene = new THREE.Scene();
+
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 50;
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.getElementById('background-webgl').appendChild(renderer.domElement);
+
+  // Grass Field
+  const grass = createGrassField();
+  scene.add(grass);
+
+  // Animation Loop
+  function animateBackground() {
+    requestAnimationFrame(animateBackground);
+
+    grass.children.forEach((blade, index) => {
+      blade.rotation.z = Math.sin(performance.now() * 0.002 + index) * 0.5; // Simulate wind
+    });
+
+    renderer.render(scene, camera);
+  }
+  animateBackground();
+
+  // Handle window resizing
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+function createGrassField() {
+  const group = new THREE.Group();
+  const material = new THREE.LineBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.8 });
+
+  for (let i = 0; i < 500; i++) {
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+      0, 0, 0,  // Base of grass blade
+      0, Math.random() * 5 + 5, 0 // Tip of grass blade
+    ]);
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    const blade = new THREE.Line(geometry, material);
+
+    blade.position.set(
+      Math.random() * 100 - 50, // Random x
+      -10, // Ground level
+      Math.random() * 100 - 50 // Random z
+    );
+
+    group.add(blade);
+  }
+  return group;
+}
+
+createDynamicBackground();
+
+////
+////
+/// weird mirror thing?
+function createDynamicBackground() {
+  const scene = new THREE.Scene();
+
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 80;
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.getElementById('background-webgl').appendChild(renderer.domElement);
+
+  // Create Fragmented Mirror
+  const mirrorGroup = createFragmentedMirror();
+  scene.add(mirrorGroup);
+
+  // Animation Loop
+  function animateBackground() {
+    requestAnimationFrame(animateBackground);
+
+    // Rotate the mirror fragments
+    mirrorGroup.children.forEach((shard, index) => {
+      shard.rotation.y += 0.005; // Slow rotation
+      shard.rotation.x += Math.sin(performance.now() * 0.001 + index) * 0.001;
+    });
+
+    renderer.render(scene, camera);
+  }
+  animateBackground();
+
+  // Handle window resizing
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+function createFragmentedMirror() {
+  const group = new THREE.Group();
+
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      time: { value: 0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      void main() {
+        gl_FragColor = vec4(vec3(abs(sin(vUv.x * 3.14))), 1.0);
+      }
+    `,
+    side: THREE.DoubleSide,
+  });
+
+  for (let i = 0; i < 30; i++) {
+    const geometry = new THREE.PlaneGeometry(Math.random() * 10 + 5, Math.random() * 10 + 5);
+    const shard = new THREE.Mesh(geometry, material);
+
+    shard.position.set(
+      Math.random() * 50 - 25,
+      Math.random() * 30 - 15,
+      Math.random() * 30 - 15
+    );
+
+    shard.rotation.set(
+      Math.random() * Math.PI,
+      Math.random() * Math.PI,
+      Math.random() * Math.PI
+    );
+
+    group.add(shard);
+  }
+  return group;
+}
+
+createDynamicBackground();
+/////////////////////////////////
+/////////////////////////////////
+//////////////////////////////
+/// crazy cubic space clutter
+function createDynamicBackground() {
+  const container = document.getElementById('background-webgl');
+
+  if (!container) {
+    console.error("No element with ID 'background-webgl' found.");
+    return;
+  }
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 100;
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  container.appendChild(renderer.domElement);
+
+  // Add glowing geometric shards
+  const group = new THREE.Group();
+  const shardMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.5,
+    metalness: 0.8,
+    emissive: 0x444444,
+  });
+
+  for (let i = 0; i < 30; i++) {
+    const geometry = new THREE.BoxGeometry(Math.random() * 5 + 1, Math.random() * 10 + 2, Math.random() * 5 + 1);
+    const shard = new THREE.Mesh(geometry, shardMaterial);
+    shard.position.set(
+      Math.random() * 200 - 100,
+      Math.random() * 100 - 50,
+      Math.random() * 200 - 100
+    );
+    shard.rotation.set(
+      Math.random() * Math.PI,
+      Math.random() * Math.PI,
+      Math.random() * Math.PI
+    );
+    group.add(shard);
+  }
+  scene.add(group);
+
+  // Add a soft light source
+  const light = new THREE.PointLight(0xffffff, 1, 500);
+  light.position.set(0, 50, 100);
+  scene.add(light);
+
+  const ambientLight = new THREE.AmbientLight(0x404040); // Soft ambient light
+  scene.add(ambientLight);
+
+  // Animation loop
+  function animate() {
+    requestAnimationFrame(animate);
+
+    group.rotation.y += 0.002;
+    group.rotation.x += 0.001;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Handle window resizing
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+createDynamicBackground();
+///////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////
+/////////////////////////////////////////////
+
+
+function createParticleGalaxy() {
+  console.log("Dynamic Background: Particle Galaxy Initializing...");
+
+  const galaxyScene = new THREE.Scene();
+  const galaxyCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  galaxyCamera.position.z = 5;
+
+  const galaxyRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  galaxyRenderer.setSize(window.innerWidth, window.innerHeight);
+  document.getElementById("background-webgl").appendChild(galaxyRenderer.domElement);
+
+  const particleCount = 10000;
+  const particles = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount * 3; i++) {
+    positions[i] = (Math.random() - 0.5) * 10; // Spread particles randomly
+  }
+
+  particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+  const particleMaterial = new THREE.PointsMaterial({
+    color: 0xff66cc,
+    size: 0.05,
+    transparent: true,
+  });
+
+  const particleSystem = new THREE.Points(particles, particleMaterial);
+  galaxyScene.add(particleSystem);
+
+  function animateGalaxy() {
+    requestAnimationFrame(animateGalaxy);
+
+    particleSystem.rotation.y += 0.002; // Rotate the galaxy
+    galaxyRenderer.render(galaxyScene, galaxyCamera);
+  }
+  animateGalaxy();
+
+  window.addEventListener("resize", () => {
+    galaxyCamera.aspect = window.innerWidth / window.innerHeight;
+    galaxyCamera.updateProjectionMatrix();
+    galaxyRenderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+createParticleGalaxy();
+
+////////
+////////
+//////
+function createVelvetFogParticles() {
+  console.log("Dynamic Background: Velvet Fog Particles Initializing...");
+
+  const fogScene = new THREE.Scene();
+  const fogCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  fogCamera.position.z = 10;
+
+  const fogRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  fogRenderer.setSize(window.innerWidth, window.innerHeight);
+  document.getElementById("background-webgl").appendChild(fogRenderer.domElement);
+
+  const particleCount = 8000;
+  const particleGeometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 15;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 15;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 15;
+  }
+
+  particleGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+  const particleMaterial = new THREE.PointsMaterial({
+    size: 0.1,
+    color: 0xa390e4,
+    opacity: 0.7,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+  });
+
+  const particles = new THREE.Points(particleGeometry, particleMaterial);
+  fogScene.add(particles);
+
+  // Postprocessing
+  const fogComposer = new POSTPROCESSING.EffectComposer(fogRenderer);
+  const fogRenderPass = new POSTPROCESSING.RenderPass(fogScene, fogCamera);
+  fogComposer.addPass(fogRenderPass);
+
+  const blurEffect = new POSTPROCESSING.BlurPass();
+  fogComposer.addPass(blurEffect);
+
+  const bloomEffect = new POSTPROCESSING.BloomEffect({
+    intensity: 1.0,
+    luminanceThreshold: 0.1,
+    luminanceSmoothing: 0.2,
+  });
+  const fogEffectPass = new POSTPROCESSING.EffectPass(fogCamera, bloomEffect);
+  fogComposer.addPass(fogEffectPass);
+
+  // Animation
+  function animateFog() {
+    requestAnimationFrame(animateFog);
+    particles.rotation.y += 0.002;
+    particles.rotation.x += 0.001;
+    fogComposer.render();
+  }
+  animateFog();
+
+  window.addEventListener("resize", () => {
+    fogCamera.aspect = window.innerWidth / window.innerHeight;
+    fogCamera.updateProjectionMatrix();
+    fogRenderer.setSize(window.innerWidth, window.innerHeight);
+    fogComposer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  console.log("Dynamic Background: Velvet Fog Particles Initialized.");
+}
+
+createVelvetFogParticles();
+///////
+//////
+//////
+function createParticleFlow() {
+  console.log("Dynamic Background: Dynamic Particle Flow Initializing...");
+
+  const flowScene = new THREE.Scene();
+  const flowCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  flowCamera.position.z = 10;
+
+  const flowRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  flowRenderer.setSize(window.innerWidth, window.innerHeight);
+  document.getElementById("background-webgl").appendChild(flowRenderer.domElement);
+
+  const particleCount = 10000;
+  const particleGeometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const velocities = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 20;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+
+    velocities[i * 3] = (Math.random() - 0.5) * 0.01;
+    velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.01;
+    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.01;
+  }
+
+  particleGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  particleGeometry.setAttribute("velocity", new THREE.BufferAttribute(velocities, 3));
+
+  const particleMaterial = new THREE.PointsMaterial({
+    size: 0.1,
+    color: 0xff9966,
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+    opacity: 0.8,
+  });
+
+  const particles = new THREE.Points(particleGeometry, particleMaterial);
+  flowScene.add(particles);
+
+  // Animation Loop
+  function animateFlow() {
+    requestAnimationFrame(animateFlow);
+
+    const positions = particleGeometry.attributes.position.array;
+    const velocities = particleGeometry.attributes.velocity.array;
+
+    for (let i = 0; i < particleCount; i++) {
+      positions[i * 3] += velocities[i * 3];
+      positions[i * 3 + 1] += velocities[i * 3 + 1];
+      positions[i * 3 + 2] += velocities[i * 3 + 2];
+
+      // Reset particles when they move too far
+      if (positions[i * 3] > 10 || positions[i * 3] < -10) velocities[i * 3] *= -1;
+      if (positions[i * 3 + 1] > 10 || positions[i * 3 + 1] < -10) velocities[i * 3 + 1] *= -1;
+      if (positions[i * 3 + 2] > 10 || positions[i * 3 + 2] < -10) velocities[i * 3 + 2] *= -1;
+    }
+
+    particleGeometry.attributes.position.needsUpdate = true;
+    flowRenderer.render(flowScene, flowCamera);
+  }
+  animateFlow();
+
+  window.addEventListener("resize", () => {
+    flowCamera.aspect = window.innerWidth / window.innerHeight;
+    flowCamera.updateProjectionMatrix();
+    flowRenderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  console.log("Dynamic Background: Dynamic Particle Flow Initialized.");
+}
+
+createParticleFlow();
+//////
+/////
+/////
+function createFireflyParticles() {
+  console.log("Dynamic Background: Firefly Particles Initializing...");
+
+  const fireflyScene = new THREE.Scene();
+  const fireflyCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  fireflyCamera.position.z = 10;
+
+  const fireflyRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  fireflyRenderer.setSize(window.innerWidth, window.innerHeight);
+  document.getElementById("background-webgl").appendChild(fireflyRenderer.domElement);
+
+  const particleCount = 5000;
+  const particleGeometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 20;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+  }
+
+  particleGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+  const particleMaterial = new THREE.PointsMaterial({
+    size: 0.1,
+    map: new THREE.TextureLoader().load("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/sprites/disc.png"),
+    transparent: true,
+    color: 0xffcc00,
+    blending: THREE.AdditiveBlending,
+    opacity: 0.8,
+  });
+
+  const particles = new THREE.Points(particleGeometry, particleMaterial);
+  fireflyScene.add(particles);
+
+  // Animation
+  function animateFireflies() {
+    requestAnimationFrame(animateFireflies);
+
+    particles.rotation.y += 0.001;
+    particles.rotation.x += 0.0005;
+
+    fireflyRenderer.render(fireflyScene, fireflyCamera);
+  }
+  animateFireflies();
+
+  window.addEventListener("resize", () => {
+    fireflyCamera.aspect = window.innerWidth / window.innerHeight;
+    fireflyCamera.updateProjectionMatrix();
+    fireflyRenderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  console.log("Dynamic Background: Firefly Particles Initialized.");
+}
+
+createFireflyParticles();
+/////
+/////
+////
+////
