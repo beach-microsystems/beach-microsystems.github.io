@@ -247,9 +247,6 @@ function clearDust(event) {
   requestAnimationFrame(animateDust);
 }
 
-
-
-
 // Prevent scrolling when interacting with dust on mobile
 dustOverlay.addEventListener('touchstart', (event) => {
   event.preventDefault();
@@ -380,7 +377,6 @@ dustOverlay.addEventListener("touchcancel", () => {
 const SHADER_COLOR = new THREE.Color(1.0, 0.0, 0.0); // Example: Red color
 
 
-
 // Initialize Three.js Scene
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -403,7 +399,6 @@ function createShaderMaterial(vertexShader, fragmentShader, customUniforms = {})
         fragmentShader,
     });
 }
-
 const verticalShader = new THREE.ShaderMaterial({
     uniforms: {
         u_time: { value: 0 },
@@ -421,30 +416,54 @@ const verticalShader = new THREE.ShaderMaterial({
         }
     `,
     fragmentShader: `
-  precision highp float;
-  uniform float u_audio;
-  uniform vec3 u_lineColor; // Uniform for dynamic color
-  varying vec2 vUv;
+        precision highp float;
+        uniform float u_time;
+        uniform vec3 u_lineColor;
+        uniform vec2 u_resolution;
+        uniform float u_audio; // Audio intensity
+        varying vec2 vUv;
 
-  void main() {
-      vec2 uv = vUv * 10.0; // Scale UV coordinates for multiple lines
+        // Simple random function
+        float random(float x) {
+            return fract(sin(x) * 43758.5453123);
+        }
 
-      // Line parameters
-      float lineWidth = 0.005 + u_audio * 0.02; // Increase thickness with audio
-      float lineSpacing = 0.1; // Keep spacing consistent
+        void main() {
+            // Normalize UV coordinates
+            vec2 uv = vUv * 10.0;
 
-      // Calculate line visibility
-      float centerDist = abs(fract(uv.x / lineSpacing) - 0.5); // Distance from center of each line
-      float lines = step(centerDist, lineWidth); // Render lines with increased thickness
+            // Audio-driven line width modulation
+            float lineWidth = 0.02 + u_audio * 0.05; // Width increases with audio
+            float lineSpacing = 0.1;
 
-      vec3 color = u_lineColor * lines; // Set line color
-      gl_FragColor = vec4(color, lines);
-  }
-`,
+            // Vibrating effect based on audio
+            float vibration = sin(u_time * 2.0 + uv.x * 30.0) * u_audio * 0.1;
+
+            // Apply vibration to line positions
+            uv.x += vibration;
+
+            // Distance to line centers
+            float centerDist = abs(fract(uv.x / lineSpacing) - 0.5);
+
+            // Randomized fading effect (still present, but subtle)
+            float randomness = random(floor(uv.x / lineSpacing));
+            float fade = 0.5 + 0.5 * sin(u_time * 2.0 + randomness * 6.28318);
+
+            // Combine all effects
+            float intensity = step(centerDist, lineWidth) * fade;
+
+            // Apply color and transparency
+            vec3 color = u_lineColor * intensity;
+            gl_FragColor = vec4(color, intensity);
+        }
+    `,
 });
-
-// Add the verticalShader to the centralized array
+const verticalPlane = createShaderPlane(verticalShader, { x: 0, y: 0, z: -3 });
+scene.add(verticalPlane);
 shaders.push(verticalShader);
+
+
+
 
 function createShaderPlane(shaderMaterial, position = { x: 0, y: 0, z: 0 }, scale = { x: 10, y: 10 }) {
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), shaderMaterial);
@@ -453,8 +472,7 @@ function createShaderPlane(shaderMaterial, position = { x: 0, y: 0, z: 0 }, scal
     return plane;
 }
 
-const verticalPlane = createShaderPlane(verticalShader, { x: 0, y: 0, z: -3 });
-scene.add(verticalPlane);
+
 
 function updateAudioUniform(audioLevel) {
     shaders.forEach(shader => {
@@ -465,16 +483,18 @@ function updateAudioUniform(audioLevel) {
 }
 
 function updateShaderUniforms(time, resolution) {
-    shaders.forEach(shader => {
-        if (shader.uniforms.u_time) {
-            shader.uniforms.u_time.value = time;
-        }
-        if (shader.uniforms.u_resolution) {
-            shader.uniforms.u_resolution.value.set(resolution.x, resolution.y);
-        }
-    });
-    // Update smoothed audio uniform
-    updateAudioUniform(smoothedAudio);
+  shaders.forEach((shader) => {
+    if (shader.uniforms.u_time) {
+      shader.uniforms.u_time.value = time;
+    }
+    if (shader.uniforms.u_resolution) {
+      shader.uniforms.u_resolution.value.set(resolution.x, resolution.y);
+    }
+    if (shader.uniforms.u_pointerSpeed) {
+      shader.uniforms.u_pointerSpeed.value = pointerSpeed.magnitude;
+    }
+  });
+  updateAudioUniform(smoothedAudio); // Keep existing audio updates
 }
 
 // Set Camera Position
@@ -523,3 +543,48 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   verticalShader.uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
 });
+
+//p5
+
+// p5.js Sketch for Stylish Background
+let cols, rows;
+let scale = 20;
+let waveHeight = 150;
+let flying = 0;
+
+function setup() {
+  let canvas = createCanvas(windowWidth, windowHeight, WEBGL);
+  canvas.parent('warp-webgl');
+  cols = floor(width / scale);
+  rows = floor(height / scale);
+}
+
+function draw() {
+  flying -= 0.05; // Wave movement speed
+  let yoff = flying;
+
+  background(10);
+  noFill();
+  stroke(255);
+
+  rotateX(PI / 3);
+  translate(-width / 2, -height / 2);
+
+  for (let y = 0; y < rows; y++) {
+    beginShape(TRIANGLE_STRIP);
+    let xoff = 0;
+    for (let x = 0; x < cols; x++) {
+      let z1 = map(noise(xoff, yoff), 0, 1, -waveHeight, waveHeight);
+      let z2 = map(noise(xoff, yoff + 0.1), 0, 1, -waveHeight, waveHeight);
+      vertex(x * scale, y * scale, z1);
+      vertex(x * scale, (y + 1) * scale, z2);
+      xoff += 0.1;
+    }
+    endShape();
+    yoff += 0.1;
+  }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
