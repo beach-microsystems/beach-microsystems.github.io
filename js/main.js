@@ -334,10 +334,18 @@ function clearDust(event) {
   const offsetY = dustCenterY - pointerY;
   const magnitude = Math.sqrt(offsetX ** 2 + offsetY ** 2) || 1;
 
+  // Clamp the pointer speed to make it less sensitive
+  const clampedSpeed = Math.min(pointerSpeed.magnitude, 2); // Limit maximum speed impact
+  
   const speedFactor = 15;
   const mass = Math.random() * 5 + 0;
-  let velocityX = (offsetX / magnitude) * (pointerSpeed.magnitude * speedFactor) / mass;
-  let velocityY = (offsetY / magnitude) * (pointerSpeed.magnitude * speedFactor) / mass;
+  let velocityX = (offsetX / magnitude) * (clampedSpeed * speedFactor) / mass;
+  let velocityY = (offsetY / magnitude) * (clampedSpeed * speedFactor) / mass;
+
+  // Add minimum velocity to ensure movement even with slow pointer speed
+  const minVelocity = 3;
+  velocityX = Math.sign(velocityX) * Math.max(Math.abs(velocityX), minVelocity);
+  velocityY = Math.sign(velocityY) * Math.max(Math.abs(velocityY), minVelocity);
 
   if (!dustImage.style.left) {
     dustImage.style.left = `${dustRect.left}px`;
