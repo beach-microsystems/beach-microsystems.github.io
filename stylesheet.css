@@ -184,8 +184,6 @@ h2 {
 }
 @keyframes blinker {
   50% { opacity: 0; }
-  color: inherit;
-  size: inherit;
 }
 
 .link {
