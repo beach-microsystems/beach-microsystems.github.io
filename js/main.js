@@ -198,198 +198,403 @@ function preventScrolling(enable) {
   }
 }
 
+class Vector3 {
+  constructor(x = 0, y = 0, z = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+  
+  add(v) {
+    return new Vector3(this.x + v.x, this.y + v.y, this.z + v.z);
+  }
+  
+  sub(v) {
+    return new Vector3(this.x - v.x, this.y - v.y, this.z - v.z);
+  }
+  
+  scale(s) {
+    return new Vector3(this.x * s, this.y * s, this.z * s);
+  }
+  
+  length() {
+    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+  }
+  
+  normalize() {
+    const len = this.length();
+    return len > 0 ? this.scale(1/len) : new Vector3();
+  }
+}
+
+class PaperPhysics {
+  constructor(width, height, gridSize = 20) {
+    this.width = width;
+    this.height = height;
+    this.gridSize = gridSize;
+    
+    // Physics constants tuned for paper-like behavior
+    this.gravity = new Vector3(0, 9.81 * 30, 0);
+    this.damping = 0.98;
+    this.stiffness = 2500;
+    this.bendingStiffness = 750;
+    this.wallStiffness = 5000;
+    this.wallDamping = 0.6;
+    this.dt = 1/60;
+    this.subSteps = 2;
+    
+    // Initialize particle grid
+    this.particles = [];
+    this.constraints = [];
+    
+    const dx = width / (gridSize - 1);
+    const dy = height / (gridSize - 1);
+    
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        this.particles.push({
+          pos: new Vector3(i * dx, j * dy, 0),
+          prevPos: new Vector3(i * dx, j * dy, 0),
+          velocity: new Vector3(),
+          mass: 1.0,
+          invMass: 1.0,
+          adhesion: 1.0,
+          isAnchored: true
+        });
+      }
+    }
+    
+    this.createConstraints();
+  }
+
+  createConstraints() {
+    // Structural constraints
+    for (let i = 0; i < this.gridSize; i++) {
+      for (let j = 0; j < this.gridSize; j++) {
+        const idx = i + j * this.gridSize;
+        
+        if (i < this.gridSize - 1) {
+          this.constraints.push({
+            p1: idx,
+            p2: idx + 1,
+            restLength: this.width / (this.gridSize - 1),
+            stiffness: this.stiffness,
+            type: 'structural'
+          });
+        }
+        
+        if (j < this.gridSize - 1) {
+          this.constraints.push({
+            p1: idx,
+            p2: idx + this.gridSize,
+            restLength: this.height / (this.gridSize - 1),
+            stiffness: this.stiffness,
+            type: 'structural'
+          });
+        }
+        
+        // Bending constraints
+        if (i < this.gridSize - 2) {
+          this.constraints.push({
+            p1: idx,
+            p2: idx + 2,
+            restLength: 2 * this.width / (this.gridSize - 1),
+            stiffness: this.bendingStiffness,
+            type: 'bending'
+          });
+        }
+        
+        if (j < this.gridSize - 2) {
+          this.constraints.push({
+            p1: idx,
+            p2: idx + 2 * this.gridSize,
+            restLength: 2 * this.height / (this.gridSize - 1),
+            stiffness: this.bendingStiffness,
+            type: 'bending'
+          });
+        }
+      }
+    }
+  }
+
+  applyForce(point, force) {
+    const radius = force * 150;
+    const forceVector = new Vector3(0, 0, force * 3000);
+    
+    for (let i = 0; i < this.particles.length; i++) {
+      const particle = this.particles[i];
+      const particlePos = new Vector3(
+        (i % this.gridSize) * (this.width / (this.gridSize - 1)),
+        Math.floor(i / this.gridSize) * (this.height / (this.gridSize - 1)),
+        0
+      );
+      
+      const dx = particlePos.x - point.x * this.width;
+      const dy = particlePos.y - point.y * this.height;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance < radius && particle.adhesion > 0) {
+        const influence = Math.pow(1 - distance/radius, 2);
+        particle.adhesion = Math.max(0, particle.adhesion - influence * 0.4);
+        
+        if (particle.adhesion <= 0) {
+          particle.isAnchored = false;
+          particle.velocity = particle.velocity.add(forceVector.scale(influence));
+        }
+      }
+    }
+  }
+
+  update(dt) {
+    const subDt = dt / this.subSteps;
+    
+    for (let step = 0; step < this.subSteps; step++) {
+      // Apply forces
+      for (let particle of this.particles) {
+        if (!particle.isAnchored) {
+          particle.velocity = particle.velocity.add(this.gravity.scale(subDt));
+          particle.velocity = particle.velocity.scale(this.damping);
+          particle.pos = particle.pos.add(particle.velocity.scale(subDt));
+        }
+      }
+      
+      // Solve constraints
+      for (let constraint of this.constraints) {
+        const p1 = this.particles[constraint.p1];
+        const p2 = this.particles[constraint.p2];
+        
+        if (p1.isAnchored && p2.isAnchored) continue;
+        
+        const delta = p2.pos.sub(p1.pos);
+        const deltaLength = delta.length();
+        const diff = (deltaLength - constraint.restLength) / deltaLength;
+        
+        const correction = delta.scale(diff * 0.5);
+        
+        if (!p1.isAnchored) p1.pos = p1.pos.add(correction.scale(constraint.stiffness * subDt * subDt));
+        if (!p2.isAnchored) p2.pos = p2.pos.sub(correction.scale(constraint.stiffness * subDt * subDt));
+      }
+    }
+  }
+
+  getTransformState() {
+    let centerX = 0, centerY = 0, centerZ = 0;
+    let maxZ = 0;
+    let unanchoredCount = 0;
+    let totalCurl = 0;
+    
+    for (let particle of this.particles) {
+      if (!particle.isAnchored) {
+        centerX += particle.pos.x;
+        centerY += particle.pos.y;
+        centerZ += particle.pos.z;
+        maxZ = Math.max(maxZ, particle.pos.z);
+        totalCurl += particle.pos.z;
+        unanchoredCount++;
+      }
+    }
+    
+    if (unanchoredCount > 0) {
+      centerX /= unanchoredCount;
+      centerY /= unanchoredCount;
+      centerZ /= unanchoredCount;
+    }
+    
+    return {
+      centerX,
+      centerY,
+      centerZ,
+      maxZ,
+      maxCurl: totalCurl / (this.particles.length || 1),
+      unanchoredCount,
+      totalParticles: this.particles.length
+    };
+  }
+}
+
 function createDustPile() {
-  const dustImageSrc = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA'; // Replace with the path to your image
-  const totalDustImages = 50; // Number of dust images
+  const dustImageSrc = 'https://raw.githubusercontent.com/beach-microsystems/hosting/refs/heads/main/x1%20nodrop.svg?token=GHSAT0AAAAAAC2XLU5ETNVQWPEQ4D6PAEE2ZZ772RA';
+  const totalDustImages = 50;
   const dustOverlay = document.getElementById('dust-overlay');
+  
+  // Create dust images
   for (let i = 0; i < totalDustImages; i++) {
     const dustImage = document.createElement('img');
     dustImage.src = dustImageSrc;
     dustImage.classList.add('dust-image');
 
     // Randomly size and position the images
-    const size = Math.random() * 100 + 30; // Random size between 30px and 80px
-    const offsetX = Math.random() * 130; // Spread horizontally within 200px
-    const offsetY = Math.random() * 100; // Spread vertically within 200px
+    const size = Math.random() * 100 + 30;
+    const offsetX = Math.random() * 130;
+    const offsetY = Math.random() * 100;
 
     dustImage.style.width = `${size}px`;
     dustImage.style.height = `${size}px`;
     dustImage.style.left = `${offsetX}px`;
     dustImage.style.top = `${offsetY}px`;
 
-    // Add interaction to clear the dust on pointer events
-    dustImage.addEventListener('pointerdown', clearDust);
     dustOverlay.appendChild(dustImage);
   }
 
-  dustOverlay.addEventListener('touchstart', (event) => {
-    event.preventDefault();
-  }, { passive: false });
+  // Desktop behavior
+  if (!('ontouchstart' in window)) {
+    dustOverlay.addEventListener('pointermove', (event) => {
+      const elements = document.elementsFromPoint(event.clientX, event.clientY);
+      elements.forEach(element => {
+        if (element.classList.contains('dust-image')) {
+          clearDust({ target: element, clientX: event.clientX, clientY: event.clientY });
+        }
+      });
+    });
+  } 
+  // Mobile behavior
+  else {
+    let isPointerDown = false;
 
+    dustOverlay.addEventListener('touchstart', (event) => {
+      event.preventDefault();
+      isPointerDown = true;
+      const touch = event.touches[0];
+      const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+      elements.forEach(element => {
+        if (element.classList.contains('dust-image')) {
+          clearDust({ target: element, clientX: touch.clientX, clientY: touch.clientY });
+        }
+      });
+    }, { passive: false });
 
-  document.addEventListener("touchmove", (event) => {
-    if (!isPointerDown) return; // Only activate when the user is actively dragging
+    dustOverlay.addEventListener('touchmove', (event) => {
+      if (!isPointerDown) return;
+      event.preventDefault();
+      const touch = event.touches[0];
+      const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+      elements.forEach(element => {
+        if (element.classList.contains('dust-image')) {
+          clearDust({ target: element, clientX: touch.clientX, clientY: touch.clientY });
+        }
+      });
+    }, { passive: false });
 
-    // Get touch position
-    const touch = event.touches[0];
-    const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
-
-    elements.forEach((element) => {
-      if (element.classList.contains("dust-image")) {
-        clearDust({ target: element, clientX: touch.clientX, clientY: touch.clientY });
-      }
+    dustOverlay.addEventListener('touchend', () => {
+      isPointerDown = false;
     });
 
-    event.preventDefault(); // Prevent scrolling during drag
-  }, { passive: false });
-
-
-
-  dustOverlay.addEventListener('pointermove', (event) => {
-    const elements = document.elementsFromPoint(event.clientX, event.clientY);
-
-    elements.forEach((element) => {
-      if (element.classList.contains('dust-image')) {
-        clearDust({ target: element });
-      }
+    dustOverlay.addEventListener('touchcancel', () => {
+      isPointerDown = false;
     });
-  });
-
-
-  dustOverlay.addEventListener("pointerup", () => {
-    isPointerDown = false; // Reset pointer state
-  });
-  // Update the pointer move listener to track speed and direction
-
-  dustOverlay.addEventListener("pointermove", (event) => {
-    //  let lastTimestamp = 0; // Tracks last timestamp
-    const elements = document.elementsFromPoint(event.clientX, event.clientY);
-    lastPointerPosition = { x: event.clientX, y: event.clientY };
-    //lastTimestamp = event.timeStamp;
-
-    elements.forEach((element) => {
-      if (element.classList.contains("dust-image")) {
-        // Move the dust image with the pointer
-        clearDust({ target: element, clientX: event.clientX, clientY: event.clientY });
-      }
-    });
-
-    // Ensure overlay doesn't block interactions when no dust images remain
-    if (dustOverlay.querySelectorAll(".dust-image").length === 0) {
-      dustOverlay.style.pointerEvents = "none";
-    }
-  });
-
-
-  // Add touch support
-
-  let isPointerDown = false; // Track if the pointer is actively down
-  dustOverlay.addEventListener("pointerdown", (event) => {
-    isPointerDown = true; // Set the global flag when pointer is pressed
-
-    // Check all elements under the pointer
-    const elements = document.elementsFromPoint(event.clientX, event.clientY);
-
-    elements.forEach((element) => {
-      if (element.classList.contains("dust-image")) {
-        clearDust({ target: element, clientX: event.clientX, clientY: event.clientY });
-      }
-    });
-  });
-
-  // Ensure pointer-events is enabled when there are dust images
-  if (dustOverlay.querySelectorAll(".dust-image").length === 0) {
-    dustOverlay.style.pointerEvents = "none";
   }
 
-  // Touch-specific event listeners for drag interactions
-  document.addEventListener("touchstart", (event) => {
-    isPointerDown = true; // Start tracking globally on touch devices
-    lastPointerPosition = { x: event.touches[0].clientX, y: event.touches[0].clientY }; // Track initial touch position
+  // Disable pointer events when no dust remains
+  const observer = new MutationObserver(() => {
+    if (dustOverlay.querySelectorAll('.dust-image').length === 0) {
+      dustOverlay.style.pointerEvents = 'none';
+    }
   });
-
-  document.addEventListener("touchend", () => {
-    isPointerDown = false; // Stop tracking globally
-  });
-
-  dustOverlay.addEventListener("touchcancel", () => {
-    isPointerDown = false; // Reset pointer state if the touch interaction is interrupted
-  });
-
+  observer.observe(dustOverlay, { childList: true });
 }
 
 function clearDust(event) {
   const dustImage = event.target;
-
   if (!dustImage.classList.contains("dust-image")) return;
 
-  const pointerX = event.clientX;
-  const pointerY = event.clientY;
+  if (!dustImage.peelState) {
+    const rect = dustImage.getBoundingClientRect();
+    dustImage.peelState = {
+      physics: new PaperPhysics(rect.width, rect.height),
+      lastTime: performance.now(),
+      initialX: rect.left,
+      initialY: rect.top,
+      width: rect.width,
+      height: rect.height
+    };
 
-  const dustRect = dustImage.getBoundingClientRect();
-  const dustCenterX = dustRect.left + dustRect.width / 2;
-  const dustCenterY = dustRect.top + dustRect.height / 2;
+    dustImage.style.position = 'absolute';
+    dustImage.style.left = `${rect.left}px`;
+    dustImage.style.top = `${rect.top}px`;
+    dustImage.classList.add('peeling');
+  }
 
-  const offsetX = dustCenterX - pointerX;
-  const offsetY = dustCenterY - pointerY;
-  const magnitude = Math.sqrt(offsetX ** 2 + offsetY ** 2) || 1;
+  const currentTime = performance.now();
+  const deltaTime = Math.min((currentTime - dustImage.peelState.lastTime) / 1000, 0.033);
+  dustImage.peelState.lastTime = currentTime;
 
-  // Clamp the pointer speed to make it less sensitive
-  const clampedSpeed = Math.min(pointerSpeed.magnitude, 2); // Limit maximum speed impact
+  const rect = dustImage.getBoundingClientRect();
+  const pointerX = (event.clientX || event.touches?.[0]?.clientX) - rect.left;
+  const pointerY = (event.clientY || event.touches?.[0]?.clientY) - rect.top;
+
+  const normalizedX = Math.max(0, Math.min(1, pointerX / rect.width));
+  const normalizedY = Math.max(0, Math.min(1, pointerY / rect.height));
+
+  const force = Math.min(pointerSpeed.magnitude * 0.008, 0.5);
   
-  const speedFactor = 15;
-  const mass = Math.random() * 5 + 0;
-  let velocityX = (offsetX / magnitude) * (clampedSpeed * speedFactor) / mass;
-  let velocityY = (offsetY / magnitude) * (clampedSpeed * speedFactor) / mass;
+  dustImage.peelState.physics.applyForce(
+    { x: normalizedX, y: normalizedY },
+    force
+  );
+  
+  dustImage.peelState.physics.update(deltaTime);
+  
+  const transform = dustImage.peelState.physics.getTransformState();
+  const peelProgress = transform.unanchoredCount / transform.totalParticles;
 
-  // Add minimum velocity to ensure movement even with slow pointer speed
-  const minVelocity = 3;
-  velocityX = Math.sign(velocityX) * Math.max(Math.abs(velocityX), minVelocity);
-  velocityY = Math.sign(velocityY) * Math.max(Math.abs(velocityY), minVelocity);
+  // Calculate natural curl angle based on physics state
+  const curlAngle = Math.atan2(transform.maxZ, transform.centerX - rect.width/2) * (180/Math.PI);
+  
+  dustImage.style.transform = `
+    perspective(1000px)
+    translate3d(
+      ${transform.centerX - rect.width/2}px,
+      ${transform.centerY - rect.height/2}px,
+      ${transform.centerZ}px
+    )
+    rotateY(${-(normalizedX - 0.5) * curlAngle}deg)
+    rotateX(${(normalizedY - 0.5) * curlAngle * 0.5}deg)
+    rotate3d(
+      ${normalizedY - 0.5},
+      ${-(normalizedX - 0.5)},
+      0.2,
+      ${curlAngle * transform.maxCurl * 0.5}deg
+    )
+  `;
 
-  if (!dustImage.style.left) {
-    dustImage.style.left = `${dustRect.left}px`;
+  // Enhanced shadow based on curl
+  const shadowIntensity = Math.min(1, transform.maxZ / 100);
+  dustImage.style.filter = `
+    drop-shadow(
+      ${transform.centerX - rect.width/2}px 
+      ${transform.maxZ * 0.5}px 
+      ${transform.maxZ * 0.3}px 
+      rgba(0,0,0,${shadowIntensity * 0.5})
+    )
+  `;
+
+  if (peelProgress > 0.7) {
+    const finalRotationX = (normalizedY - 0.5) * 180;
+    const finalRotationY = -(normalizedX - 0.5) * 180;
+    
+    dustImage.style.transition = 'all 0.8s cubic-bezier(0.23, 1, 0.32, 1)';
+    dustImage.style.transform = `
+      perspective(1000px)
+      translate3d(
+        ${transform.centerX - rect.width/2}px,
+        ${transform.centerY - rect.height/2 + 100}px,
+        500px
+      )
+      rotateX(${finalRotationX}deg)
+      rotateY(${finalRotationY}deg)
+      scale3d(0.5, 0.5, 0.5)
+    `;
+    
+    dustImage.style.opacity = '0';
+    setTimeout(() => dustImage.remove(), 800);
+    return;
   }
-  if (!dustImage.style.top) {
-    dustImage.style.top = `${dustRect.top}px`;
-  }
 
-  const animateDust = () => {
-    const friction = 0.98; // Reduces velocity over time
-    const drag = 0.05; // Simulates air resistance
-    const gravity = 0.1; // Optional: Adds slight downward pull
-
-    const velocityScale = 1; // Dampens reaction to speed
-
-    velocityX = (velocityX * velocityScale) * friction;
-    velocityY = (velocityY * velocityScale) * friction;
-    velocityY += gravity; // Apply gravity to simulate paper settling
-
-    const currentLeft = parseFloat(dustImage.style.left) || 0;
-    const currentTop = parseFloat(dustImage.style.top) || 0;
-
-    dustImage.style.left = `${currentLeft + velocityX}px`;
-    dustImage.style.top = `${currentTop + velocityY}px`;
-
-    // Add rotation for realism
-    const rotation = parseFloat(dustImage.style.transform.replace(/[^\d.-]/g, '')) || 0;
-    dustImage.style.transform = `rotate(${rotation + velocityX * 0.5}deg)`;
-
-    const newRect = dustImage.getBoundingClientRect();
-    if (
-      newRect.right < 0 ||
-      newRect.bottom < 0 ||
-      newRect.left > window.innerWidth ||
-      newRect.top > window.innerHeight
-    ) {
-      dustImage.remove(); // Remove the image only when off-screen
-      return;
+  requestAnimationFrame(() => {
+    if (dustImage.isConnected) {
+      clearDust({ target: dustImage, clientX: event.clientX, clientY: event.clientY });
     }
-
-    requestAnimationFrame(animateDust);
-  };
-
-  requestAnimationFrame(animateDust);
+  });
 }
 
 let pointerSpeed = { x: 0, y: 0, magnitude: 0 };

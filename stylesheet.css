@@ -72,9 +72,37 @@ canvas {
 }
 
 .dust-image {
-  pointer-events: auto; /* Dust images remain interactive */
   position: absolute;
-  z-index: 1001; /* Ensure they are above the accordion visually */
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: transform 0.05s linear;
+  pointer-events: auto;
+  z-index: 1001;
+}
+
+.dust-image.peeling {
+  z-index: 1002;
+  pointer-events: none;
+}
+
+.dust-image::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    var(--peel-angle, 45deg),
+    rgba(0,0,0,0.2),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.dust-image.peeling::before {
+  opacity: 1;
 }
 
 .accordion {
@@ -183,7 +211,9 @@ h2 {
 
 }
 @keyframes blinker {
-  50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }
 
 .link {
